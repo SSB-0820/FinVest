@@ -1,2 +1,113 @@
-<h1>Admin Dashboard</h1>
-<a href="{{ url_for('auth.logout') }}">Logout</a>
+{% extends "dashboard/layout.html" %}
+
+{% block title %}Admin | FinVest{% endblock %}
+{% block page_title %}Admin Dashboard{% endblock %}
+{% block page_subtitle %}System overview for the single admin account and basic monitoring of users and finance activity.{% endblock %}
+
+{% block content %}
+<section class="stats-grid">
+    <div class="card stat-card">
+        <div class="card-title">Total Users</div>
+        <div class="card-value">{{ total_users }}</div>
+        <div class="helper-text">Registered users in the system</div>
+    </div>
+    <div class="card stat-card">
+        <div class="card-title">Admin Accounts</div>
+        <div class="card-value">{{ total_admins }}</div>
+        <div class="helper-text">Expected value is 1</div>
+    </div>
+    <div class="card stat-card">
+        <div class="card-title">Transactions</div>
+        <div class="card-value">{{ total_transactions }}</div>
+        <div class="helper-text">All income and expense entries</div>
+    </div>
+    <div class="card stat-card">
+        <div class="card-title">Categories</div>
+        <div class="card-value">{{ total_categories }}</div>
+        <div class="helper-text">System-wide custom and default categories</div>
+    </div>
+    <div class="card stat-card">
+        <div class="card-title">Budgets</div>
+        <div class="card-value">{{ total_budgets }}</div>
+        <div class="helper-text">Budget plans created by users</div>
+    </div>
+    <div class="card stat-card">
+        <div class="card-title">Goals</div>
+        <div class="card-value">{{ total_goals }}</div>
+        <div class="helper-text">Saving goals created by users</div>
+    </div>
+</section>
+
+<section class="content-grid">
+    <div class="content-main">
+        <div class="panel">
+            <div class="panel-header"><span>Recent Users</span></div>
+            {% if recent_users %}
+                <div class="table-wrap">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th>Role</th>
+                                <th>Created</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for user in recent_users %}
+                                <tr>
+                                    <td>{{ user.name }}</td>
+                                    <td>{{ user.email }}</td>
+                                    <td><span class="type-chip">{{ user.role }}</span></td>
+                                    <td>{{ user.created_at.strftime('%d-%m-%Y %H:%M') if user.created_at else '-' }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <p class="empty-text">No users found.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="content-side">
+        <div class="panel">
+            <div class="panel-header"><span>Recent Transactions</span></div>
+            {% if recent_admin_transactions %}
+                {% for item in recent_admin_transactions %}
+                    <div class="tx">
+                        <div>
+                            <strong>{{ item.category.name if item.category else 'Category' }}</strong>
+                            <div class="helper-text">User ID {{ item.user_id }} • {{ item.date.strftime('%d %b %Y') if item.date else '-' }}</div>
+                        </div>
+                        <span class="{% if item.type == 'income' %}up{% else %}warn{% endif %}">
+                            {{ item.type }} {{ '%.2f'|format(item.amount) }}
+                        </span>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <p class="empty-text">No transactions found.</p>
+            {% endif %}
+        </div>
+
+        <div class="panel">
+            <div class="panel-header"><span>Admin Account</span></div>
+            <div class="list-row">
+                <div>
+                    <strong>Email</strong>
+                    <div class="helper-text">Single admin login</div>
+                </div>
+                <span>admin@gmail.com</span>
+            </div>
+            <div class="list-row">
+                <div>
+                    <strong>Password</strong>
+                    <div class="helper-text">Insert hashed password in DB</div>
+                </div>
+                <span>admin@123</span>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

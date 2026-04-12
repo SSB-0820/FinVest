@@ -2,6 +2,8 @@ from functools import wraps
 
 from flask import flash, redirect, session, url_for
 
+ADMIN_EMAIL = "admin@gmail.com"
+
 
 def login_required(func):
     @wraps(func)
@@ -17,7 +19,11 @@ def login_required(func):
 def admin_required(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
-        if "role" not in session or session["role"] != "admin":
+        if (
+            "role" not in session
+            or session["role"] != "admin"
+            or session.get("email") != ADMIN_EMAIL
+        ):
             flash("Access denied")
             return redirect(url_for("auth.auth_page"))
         return func(*args, **kwargs)

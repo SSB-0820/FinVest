@@ -1,0 +1,81 @@
+{% extends "dashboard/layout.html" %}
+
+{% block title %}Budgets | FinVest{% endblock %}
+{% block page_title %}Budget Planning{% endblock %}
+{% block page_subtitle %}Set monthly category limits and compare them with your actual spending for the selected month.{% endblock %}
+
+{% block content %}
+<section class="content-grid">
+    <div class="content-main">
+        <div class="panel">
+            <div class="panel-header">
+                <span>Current Budgets</span>
+                <form method="GET" action="{{ url_for('budgets.budget_list') }}" class="inline-filter">
+                    <input type="number" name="month" min="1" max="12" value="{{ month }}">
+                    <input type="number" name="year" min="2024" max="2100" value="{{ year }}">
+                    <button type="submit" class="btn-primary-action small">Load</button>
+                </form>
+            </div>
+
+            {% if budgets %}
+                <div class="budget-list">
+                    {% for item in budgets %}
+                        <div class="budget-card-row">
+                            <div class="budget-card-header">
+                                <div>
+                                    <strong>{{ item.budget.category.name }}</strong>
+                                    <div class="helper-text">{{ month }}/{{ year }}</div>
+                                </div>
+                                <form method="POST" action="{{ url_for('budgets.delete_budget', budget_id=item.budget.id) }}">
+                                    <button type="submit" class="btn-link-danger">Delete</button>
+                                </form>
+                            </div>
+                            <div class="budget-amounts">
+                                <span>Spent: {{ settings.currency }} {{ '%.2f'|format(item.spent) }}</span>
+                                <span>Limit: {{ settings.currency }} {{ '%.2f'|format(item.budget.limit_amount) }}</span>
+                                <span class="{% if item.percent > 100 %}warn{% elif item.percent >= 80 %}link{% else %}up{% endif %}">
+                                    {{ item.percent }}%
+                                </span>
+                            </div>
+                            <div class="bar tall {% if item.percent > 100 %}red{% endif %}">
+                                <div class="{% if item.percent > 100 %}bar-expense{% else %}bar-income{% endif %}" style="width: {{ 100 if item.percent > 100 else item.percent }}%"></div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p class="empty-text">No budgets added for this month yet.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="content-side">
+        <div class="panel form-card">
+            <div class="panel-header"><span>Add Budget</span></div>
+            <form method="POST" action="{{ url_for('budgets.add_budget') }}" class="stack-form">
+                <label>
+                    <span>Category</span>
+                    <select name="category_id" required>
+                        {% for category in categories %}
+                            <option value="{{ category.id }}">{{ category.name }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+                <label>
+                    <span>Limit Amount</span>
+                    <input type="number" name="limit_amount" min="0" step="0.01" required>
+                </label>
+                <label>
+                    <span>Month</span>
+                    <input type="number" name="month" min="1" max="12" value="{{ month }}" required>
+                </label>
+                <label>
+                    <span>Year</span>
+                    <input type="number" name="year" min="2024" max="2100" value="{{ year }}" required>
+                </label>
+                <button type="submit" class="btn-primary-action">Save Budget</button>
+            </form>
+        </div>
+    </div>
+</section>
+{% endblock %}

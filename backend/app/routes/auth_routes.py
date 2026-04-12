@@ -3,7 +3,11 @@ from datetime import datetime, timedelta
 from flask import Blueprint, flash, redirect, render_template, request, session, url_for
 from werkzeug.security import check_password_hash, generate_password_hash
 
+from app.models.account_model import ensure_default_account
+from app.models.category_model import ensure_default_categories
 from app.models.user_model import User
+from app.models.user_settings_model import get_or_create_user_settings
+from app.utils.decorators import ADMIN_EMAIL
 from extensions.db import db
 
 auth = Blueprint("auth", __name__)
@@ -40,6 +44,10 @@ def register():
         flash("Email already registered")
         return redirect(url_for("auth.auth_page", mode="signup"))
 
+    if email.lower() == ADMIN_EMAIL:
+        flash("This email is reserved for system admin")
+        return redirect(url_for("auth.auth_page", mode="signup"))
+
     hashed_password = generate_password_hash(password)
     new_user = User(
         name=username,
@@ -49,6 +57,11 @@ def register():
     )
 
     db.session.add(new_user)
+    db.session.commit()
+
+    get_or_create_user_settings(new_user.id)
+    ensure_default_categories(new_user.id)
+    ensure_default_account(new_user.id)
     db.session.commit()
 
     session.pop("login_attempts", None)
@@ -90,6 +103,7 @@ def login():
 
     session["user_id"] = user.id
     session["username"] = user.name
+    session["email"] = user.email
     session["role"] = user.role
     session.pop("login_attempts", None)
     session.pop("last_attempt_time", None)

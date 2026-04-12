@@ -1,0 +1,98 @@
+{% extends "dashboard/layout.html" %}
+
+{% block title %}Goals | FinVest{% endblock %}
+{% block page_title %}Saving and Goals{% endblock %}
+{% block page_subtitle %}Create personal saving goals, update progress, and track how much is still left to achieve them.{% endblock %}
+
+{% block content %}
+<section class="content-grid">
+    <div class="content-main">
+        <div class="panel">
+            <div class="panel-header"><span>Your Goals</span></div>
+            {% if goals %}
+                <div class="goal-list">
+                    {% for item in goals %}
+                        <div class="goal-card">
+                            <div class="goal-card-top">
+                                <div>
+                                    <strong>{{ item.goal.goal_name }}</strong>
+                                    <div class="helper-text">
+                                        {% if item.goal.deadline %}Deadline: {{ item.goal.deadline.strftime('%d %b %Y') }}{% else %}No deadline{% endif %}
+                                    </div>
+                                </div>
+                                <span class="type-chip">{{ item.goal.status }}</span>
+                            </div>
+
+                            <div class="budget-amounts">
+                                <span>Saved: {{ settings.currency }} {{ '%.2f'|format(item.goal.current_amount) }}</span>
+                                <span>Target: {{ settings.currency }} {{ '%.2f'|format(item.goal.target_amount) }}</span>
+                                <span>Left: {{ settings.currency }} {{ '%.2f'|format(item.remaining) }}</span>
+                            </div>
+
+                            <div class="bar tall">
+                                <div class="bar-income" style="width: {{ item.percent }}%"></div>
+                            </div>
+                            <div class="helper-text">{{ item.percent }}% completed</div>
+
+                            <details class="inline-editor">
+                                <summary>Edit Goal</summary>
+                                <form method="POST" action="{{ url_for('goals.update_goal', goal_id=item.goal.id) }}" class="stack-form compact-form">
+                                    <input type="text" name="goal_name" value="{{ item.goal.goal_name }}" required>
+                                    <input type="number" name="target_amount" min="0" step="0.01" value="{{ item.goal.target_amount }}" required>
+                                    <input type="number" name="current_amount" min="0" step="0.01" value="{{ item.goal.current_amount }}" required>
+                                    <input type="date" name="deadline" value="{{ item.goal.deadline.isoformat() if item.goal.deadline else '' }}">
+                                    <select name="status">
+                                        {% for status in ['In Progress', 'Completed', 'Paused'] %}
+                                            <option value="{{ status }}" {% if item.goal.status == status %}selected{% endif %}>{{ status }}</option>
+                                        {% endfor %}
+                                    </select>
+                                    <button type="submit" class="btn-primary-action small">Save</button>
+                                </form>
+                            </details>
+
+                            <form method="POST" action="{{ url_for('goals.delete_goal', goal_id=item.goal.id) }}">
+                                <button type="submit" class="btn-link-danger">Delete Goal</button>
+                            </form>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p class="empty-text">No goals added yet.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="content-side">
+        <div class="panel form-card">
+            <div class="panel-header"><span>Add Goal</span></div>
+            <form method="POST" action="{{ url_for('goals.add_goal') }}" class="stack-form">
+                <label>
+                    <span>Goal Name</span>
+                    <input type="text" name="goal_name" placeholder="Emergency Fund" required>
+                </label>
+                <label>
+                    <span>Target Amount</span>
+                    <input type="number" name="target_amount" min="0" step="0.01" required>
+                </label>
+                <label>
+                    <span>Current Amount</span>
+                    <input type="number" name="current_amount" min="0" step="0.01" value="0">
+                </label>
+                <label>
+                    <span>Deadline</span>
+                    <input type="date" name="deadline">
+                </label>
+                <label>
+                    <span>Status</span>
+                    <select name="status">
+                        <option value="In Progress">In Progress</option>
+                        <option value="Completed">Completed</option>
+                        <option value="Paused">Paused</option>
+                    </select>
+                </label>
+                <button type="submit" class="btn-primary-action">Add Goal</button>
+            </form>
+        </div>
+    </div>
+</section>
+{% endblock %}

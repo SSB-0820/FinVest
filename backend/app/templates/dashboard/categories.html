@@ -1,0 +1,63 @@
+{% extends "dashboard/layout.html" %}
+
+{% block title %}Categories | FinVest{% endblock %}
+{% block page_title %}Category Management{% endblock %}
+{% block page_subtitle %}Use the default income and expense categories or add your own simple custom categories.{% endblock %}
+
+{% block content %}
+<section class="content-grid single-page">
+    <div class="content-main">
+        <div class="panel">
+            <div class="panel-header"><span>Available Categories</span></div>
+            <div class="table-wrap">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in categories %}
+                            <tr>
+                                <td>{{ item.name }}</td>
+                                <td><span class="type-chip {{ item.type }}">{{ item.type }}</span></td>
+                                <td>
+                                    <form method="POST" action="{{ url_for('categories.delete_category', category_id=item.id) }}">
+                                        <button type="submit" class="btn-link-danger">Delete</button>
+                                    </form>
+                                </td>
+                            </tr>
+                        {% else %}
+                            <tr>
+                                <td colspan="3">No categories available.</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="content-side">
+        <div class="panel form-card">
+            <div class="panel-header"><span>Add Category</span></div>
+            <form method="POST" action="{{ url_for('categories.add_category') }}" class="stack-form">
+                <label>
+                    <span>Name</span>
+                    <input type="text" name="name" placeholder="Internet Bill" required>
+                </label>
+                <label>
+                    <span>Type</span>
+                    <select name="type">
+                        <option value="expense">Expense</option>
+                        <option value="income">Income</option>
+                    </select>
+                </label>
+                <button type="submit" class="btn-primary-action">Add Category</button>
+            </form>
+        </div>
+    </div>
+</section>
+{% endblock %}

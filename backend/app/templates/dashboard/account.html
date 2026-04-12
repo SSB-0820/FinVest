@@ -1,0 +1,104 @@
+{% extends "dashboard/layout.html" %}
+
+{% block title %}Account | FinVest{% endblock %}
+{% block page_title %}Account Management{% endblock %}
+{% block page_subtitle %}Update your name, currency, salary settings, and manage the accounts you use for transactions.{% endblock %}
+
+{% block content %}
+<section class="content-grid single-page">
+    <div class="content-main">
+        <div class="card form-card">
+            <div class="panel-header"><span>Profile</span></div>
+            <form method="POST" action="{{ url_for('dashboard.update_profile') }}" class="stack-form">
+                <div class="form-grid two-col">
+                    <label>
+                        <span>Name</span>
+                        <input type="text" name="name" value="{{ user.name }}" required>
+                    </label>
+                    <label>
+                        <span>Email</span>
+                        <input type="text" value="{{ user.email }}" disabled>
+                    </label>
+                </div>
+                <button type="submit" class="btn-primary-action">Save Profile</button>
+            </form>
+        </div>
+
+        <div class="card form-card">
+            <div class="panel-header"><span>Settings</span></div>
+            <form method="POST" action="{{ url_for('dashboard.update_settings') }}" class="stack-form">
+                <div class="form-grid">
+                    <label>
+                        <span>Currency</span>
+                        <select name="currency">
+                            {% for code in ['INR', 'USD', 'EUR', 'GBP'] %}
+                                <option value="{{ code }}" {% if settings.currency == code %}selected{% endif %}>{{ code }}</option>
+                            {% endfor %}
+                        </select>
+                    </label>
+                    <label>
+                        <span>Locale</span>
+                        <input type="text" name="locale" value="{{ settings.locale or 'en-IN' }}">
+                    </label>
+                    <label>
+                        <span>Month Start Day</span>
+                        <input type="number" name="month_start_day" min="1" max="28" value="{{ settings.month_start_day or 1 }}">
+                    </label>
+                    <label>
+                        <span>Monthly Salary</span>
+                        <input type="number" name="monthly_salary" min="0" step="0.01" value="{{ settings.monthly_salary or 0 }}">
+                    </label>
+                </div>
+                <button type="submit" class="btn-primary-action">Save Settings</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="content-side">
+        <div class="panel form-card">
+            <div class="panel-header"><span>Add Account</span></div>
+            <form method="POST" action="{{ url_for('dashboard.add_account') }}" class="stack-form">
+                <label>
+                    <span>Account Name</span>
+                    <input type="text" name="account_name" placeholder="Salary Account" required>
+                </label>
+                <label>
+                    <span>Type</span>
+                    <select name="type">
+                        <option value="Cash">Cash</option>
+                        <option value="Bank">Bank</option>
+                        <option value="UPI">UPI</option>
+                    </select>
+                </label>
+                <label>
+                    <span>Balance</span>
+                    <input type="number" name="balance" min="0" step="0.01" value="0">
+                </label>
+                <button type="submit" class="btn-primary-action">Add Account</button>
+            </form>
+        </div>
+
+        <div class="panel">
+            <div class="panel-header"><span>Your Accounts</span></div>
+            {% if accounts %}
+                {% for account in accounts %}
+                    <div class="list-row">
+                        <div>
+                            <strong>{{ account.account_name }}</strong>
+                            <div class="helper-text">{{ account.type }}</div>
+                        </div>
+                        <div class="row-actions">
+                            <span>{{ settings.currency or 'INR' }} {{ '%.2f'|format(account.balance) }}</span>
+                            <form method="POST" action="{{ url_for('dashboard.delete_account', account_id=account.id) }}">
+                                <button type="submit" class="btn-link-danger">Delete</button>
+                            </form>
+                        </div>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <p class="empty-text">No accounts added yet.</p>
+            {% endif %}
+        </div>
+    </div>
+</section>
+{% endblock %}

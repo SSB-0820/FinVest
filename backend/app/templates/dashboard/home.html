@@ -1,138 +1,170 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard</title>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@500;600&display=swap">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
-</head>
-<body>
-    <aside class="sidebar">
-        <div class="logo">
-            Fin<span>vest</span>
+{% extends "dashboard/layout.html" %}
+
+{% block title %}Dashboard | FinVest{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+{% block page_subtitle %}Your finance summary, recent activity, and spending view for this month.{% endblock %}
+
+{% block content %}
+<section class="stats-grid">
+    <div class="card stat-card">
+        <div class="card-title">Total Balance</div>
+        <div class="card-value">{{ currency_symbol }} {{ '%.2f'|format(total_balance) }}</div>
+        <div class="helper-text">Across all your accounts</div>
+    </div>
+    <div class="card stat-card">
+        <div class="card-title">Monthly Income</div>
+        <div class="card-value up">{{ currency_symbol }} {{ '%.2f'|format(monthly_income) }}</div>
+        <div class="helper-text">Income added this month</div>
+    </div>
+    <div class="card stat-card">
+        <div class="card-title">Monthly Expense</div>
+        <div class="card-value warn">{{ currency_symbol }} {{ '%.2f'|format(monthly_expense) }}</div>
+        <div class="helper-text">Expenses added this month</div>
+    </div>
+</section>
+
+<section class="content-grid">
+    <div class="content-main">
+        <div class="card">
+            <div class="panel-header">
+                <span>Monthly Income vs Expense</span>
+            </div>
+            <div class="compare-list">
+                {% for item in monthly_stats %}
+                    <div class="compare-row">
+                        <div class="compare-label">{{ item.label }}</div>
+                        <div class="compare-bars">
+                            <div class="compare-bar-group">
+                                <span class="mini-label">Income</span>
+                                <div class="bar tall"><div class="bar-income" style="width: {{ item.income_width }}%"></div></div>
+                            </div>
+                            <div class="compare-bar-group">
+                                <span class="mini-label">Expense</span>
+                                <div class="bar tall red"><div class="bar-expense" style="width: {{ item.expense_width }}%"></div></div>
+                            </div>
+                        </div>
+                        <div class="compare-values">
+                            <span>{{ currency_symbol }} {{ '%.0f'|format(item.income) }}</span>
+                            <span>{{ currency_symbol }} {{ '%.0f'|format(item.expense) }}</span>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
         </div>
-        <nav class="nav">
-            <a class="nav-item active">Dashboard</a>
-            <a class="nav-item">Transactions</a>
-            <a class="nav-item">Categories</a>
-            <a class="nav-item">Budgets</a>
-            <a class="nav-item">Reports</a>
-            <a class="nav-item">Goals</a>
-            <a class="nav-item">Notifications</a>
-            <a class="nav-item">Settings</a>
-        </nav>
-        <a href="{{ url_for('auth.logout') }}" class="logout">Logout</a>
-    </aside>
 
-    <div class="main">
-        <header class="header">
-            <h1>Dashboard</h1>
-            <div class="header-right">
-                <div class="avatar"></div>
+        <div class="card">
+            <div class="panel-header">
+                <span>Category-wise Spending</span>
             </div>
-        </header>
-
-        <div class="content">
-            <div class="center">
-                <div class="welcome">
-                    <h2>Welcome back, {{ session.get('username', 'User') }}</h2>
-                    <p>Here's an overview of your finances.</p>
+            <div class="chart-layout">
+                <div class="pie-wrap">
+                    <div class="pie-chart" style="{{ pie_chart_style }}"></div>
                 </div>
-
-                <div class="grid-2">
-                    <div class="card">
-                        <div class="card-title">Total Balance</div>
-                        <div class="card-value">Rs. 1,20,500</div>
-                        <div class="chart">
-                            <div class="line gold"></div>
-                        </div>
-                    </div>
-                    <div class="card">
-                        <div class="card-title">Monthly Income</div>
-                        <div class="card-value">Rs. 75,000</div>
-                        <div class="chart">
-                            <div class="line blue"></div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="grid-2">
-                    <div class="card">
-                        <div class="card-title">Income vs Expenses</div>
-                        <div class="budget">
-                            <div class="budget-item">
-                                <span>Transport</span>
-                                <span>Rs. 8,500</span>
-                                <div class="bar">
-                                    <div style="width: 100%"></div>
+                <div class="legend-list">
+                    {% if chart_legend %}
+                        {% for item in chart_legend %}
+                            <div class="legend-item">
+                                <span class="legend-dot" style="background: {{ item.color }}"></span>
+                                <div class="legend-text">
+                                    <strong>{{ item.name }}</strong>
+                                    <small>{{ currency_symbol }} {{ '%.2f'|format(item.amount) }} • {{ item.percent }}%</small>
                                 </div>
                             </div>
-                            <div class="budget-item">
-                                <span>Shopping</span>
-                                <span class="warn">Rs. 14,500</span>
-                                <div class="bar red">
-                                    <div style="width: 90%"></div>
-                                </div>
-                            </div>
-                            <div class="budget-item">
-                                <span>Food</span>
-                                <span class="warn">Rs. 12,500</span>
-                                <div class="bar red">
-                                    <div style="width: 60%"></div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="card">
-                        <div class="card-title">Budget Overview</div>
-                    </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="empty-text">Add some expense transactions to see the category chart.</p>
+                    {% endif %}
                 </div>
             </div>
+        </div>
 
-            <div class="right">
-                <div class="panel">
-                    <div class="panel-header">
-                        <span>Recent Transactions</span>
-                        <span class="link">Clear All</span>
-                    </div>
-                    <div class="tx">
-                        <span>Rent</span>
-                        <span>Rs. 12,000</span>
-                    </div>
-                    <div class="tx">
-                        <span>Grocerires</span>
-                        <span>Rs. 2,500</span>
-                    </div>
-                </div>
-
-                <div class="panel">
-                    <div class="panel-header">
-                        <span>Notifications</span>
-                    </div>
-                    <div class="notif">
-                        Budget exceeded for Food
-                    </div>
-                    <div class="notif">
-                        Electricity bill reminder
-                    </div>
-                </div>
-
-                <div class="panel">
-                    <div class="panel-header">
-                        <span>Saving Goals</span>
-                    </div>
-                    <div class="goal">
-                        <div class="circle">60%</div>
-                        <div>
-                            <div>New Laptop</div>
-                            <small>Rs. 80k / Rs. 1L</small>
-                        </div>
-                    </div>
-                </div>
+        <div class="card">
+            <div class="panel-header">
+                <span>Budget vs Actual Spending</span>
+                <a href="{{ url_for('budgets.budget_list') }}" class="link">Manage Budgets</a>
             </div>
+            {% if budget_rows %}
+                <div class="budget-list">
+                    {% for item in budget_rows %}
+                        <div class="budget-card-row">
+                            <div class="budget-card-header">
+                                <strong>{{ item.budget.category.name }}</strong>
+                                <span class="{% if item.percent > 100 %}warn{% elif item.percent >= 80 %}link{% else %}up{% endif %}">
+                                    {{ item.percent }}%
+                                </span>
+                            </div>
+                            <div class="budget-amounts">
+                                <span>Spent: {{ currency_symbol }} {{ '%.2f'|format(item.spent) }}</span>
+                                <span>Limit: {{ currency_symbol }} {{ '%.2f'|format(item.budget.limit_amount) }}</span>
+                            </div>
+                            <div class="bar tall {% if item.percent > 100 %}red{% endif %}">
+                                <div class="{% if item.percent > 100 %}bar-expense{% else %}bar-income{% endif %}" style="width: {{ 100 if item.percent > 100 else item.percent }}%"></div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p class="empty-text">Add monthly budgets to compare them with current spending.</p>
+            {% endif %}
         </div>
     </div>
-</body>
-</html>
+
+    <div class="content-side">
+        <div class="panel">
+            <div class="panel-header">
+                <span>Recent Transactions</span>
+                <a href="{{ url_for('transactions.transaction_list') }}" class="link">View All</a>
+            </div>
+            {% if recent_transactions %}
+                {% for item in recent_transactions %}
+                    <div class="tx">
+                        <div>
+                            <strong>{{ item.category.name }}</strong>
+                            <div class="helper-text">{{ item.date.strftime('%d %b %Y') }}{% if item.description %} • {{ item.description }}{% endif %}</div>
+                        </div>
+                        <span class="{% if item.type == 'income' %}up{% else %}warn{% endif %}">
+                            {% if item.type == 'income' %}+{% else %}-{% endif %}{{ currency_symbol }} {{ '%.2f'|format(item.amount) }}
+                        </span>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <p class="empty-text">No transactions added yet.</p>
+            {% endif %}
+        </div>
+
+        <div class="panel">
+            <div class="panel-header">
+                <span>Accounts</span>
+                <a href="{{ url_for('dashboard.account') }}" class="link">Manage</a>
+            </div>
+            {% if accounts %}
+                {% for account in accounts[:4] %}
+                    <div class="tx">
+                        <span>{{ account.account_name }}</span>
+                        <span>{{ currency_symbol }} {{ '%.2f'|format(account.balance) }}</span>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <p class="empty-text">No accounts added yet.</p>
+            {% endif %}
+        </div>
+
+        <div class="panel">
+            <div class="panel-header">
+                <span>Top Saving Goal</span>
+            </div>
+            {% if top_goal %}
+                <div class="goal">
+                    <div class="circle">{{ goal_percent }}%</div>
+                    <div>
+                        <div>{{ top_goal.goal_name }}</div>
+                        <small>{{ currency_symbol }} {{ '%.2f'|format(top_goal.current_amount) }} / {{ currency_symbol }} {{ '%.2f'|format(top_goal.target_amount) }}</small>
+                    </div>
+                </div>
+            {% else %}
+                <p class="empty-text">No goals added yet.</p>
+            {% endif %}
+        </div>
+    </div>
+</section>
+{% endblock %}
