@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Finvest | Auth</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;600;700&family=DM+Sans:wght@300;400;500&display=swap"
+        rel="stylesheet"
+    />
+    <link href="{{ url_for('static', filename='css/auth.css') }}" rel="stylesheet" />
+</head>
+<body>
+    <nav>
+        <a href="{{ url_for('auth.onboarding') }}" class="logo">Fin<span>vest</span></a>
+    </nav>
+
+    {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            <div id="flash-overlay">
+                <div class="flash-box">
+                    {% for message in messages %}
+                        <p class="flash-text">{{ message }}</p>
+                    {% endfor %}
+                    <button id="flash-ok">OK</button>
+                </div>
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    <div class="container" id="container">
+        <div class="form-container sign-up">
+            <form method="POST" action="{{ url_for('auth.register') }}">
+                <div class="form-header">
+                    <h1>Create Account</h1>
+                    <p>Start your financial journey today</p>
+                </div>
+
+                <div class="input-group">
+                    <svg class="input-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                        <circle cx="12" cy="8" r="4"></circle>
+                        <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"></path>
+                    </svg>
+                    <input type="text" name="username" placeholder="Username" />
+                </div>
+
+                <div class="input-group">
+                    <svg class="input-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                        <rect x="2" y="4" width="20" height="16" rx="2"></rect>
+                        <path d="M2 7l10 7 10-7"></path>
+                    </svg>
+                    <input type="email" name="email" placeholder="Email Address" />
+                </div>
+
+                <!-- <div class="input-group select-group">
+                    <svg class="input-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                        <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"></path>
+                        <circle cx="9" cy="7" r="4"></circle>
+                        <path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"></path>
+                    </svg>
+                    <select name="role">
+                        <option value="user" selected>User</option>
+                        <option value="admin">Admin</option>
+                    </select>
+                    <svg class="select-arrow" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path d="M6 9l6 6 6-6"></path>
+                    </svg>
+                </div> -->
+
+                <div class="input-group">
+                    <svg class="input-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                        <rect x="5" y="11" width="14" height="10" rx="2"></rect>
+                        <path d="M8 11V7a4 4 0 018 0v4"></path>
+                    </svg>
+                    <input type="password" name="password" placeholder="Password" />
+                </div>
+
+                <div class="input-group">
+                    <svg class="input-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                        <path d="M9 12l2 2 4-4"></path>
+                        <rect x="5" y="11" width="14" height="10" rx="2"></rect>
+                        <path d="M8 11V7a4 4 0 018 0v4"></path>
+                    </svg>
+                    <input type="password" name="confirm_password" placeholder="Confirm Password" />
+                </div>
+
+                <button type="submit" class="btn-main">
+                    <span>Sign Up</span>
+                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path d="M5 12h14"></path>
+                        <path d="M12 5l7 7-7 7"></path>
+                    </svg>
+                </button>
+
+                <p class="switch-text">
+                    Already have an account?
+                    <span class="switch" id="toLogin">Login</span>
+                </p>
+            </form>
+        </div>
+
+        <div class="form-container sign-in">
+            <form method="POST" action="{{ url_for('auth.login') }}">
+                <div class="form-header">
+                    <h1>Welcome Back</h1>
+                    <p>Sign in to your account</p>
+                </div>
+
+                <div class="input-group">
+                    <svg class="input-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                        <rect x="2" y="4" width="20" height="16" rx="2"></rect>
+                        <path d="M2 7l10 7 10-7"></path>
+                    </svg>
+                    <input type="email" name="email" placeholder="Email Address" />
+                </div>
+
+                <div class="input-group">
+                    <svg class="input-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                        <rect x="5" y="11" width="14" height="10" rx="2"></rect>
+                        <path d="M8 11V7a4 4 0 018 0v4"></path>
+                    </svg>
+                    <input type="password" name="password" placeholder="Password" />
+                </div>
+
+                <a href="#" class="forgot">Forgot Password?</a>
+
+                <button type="submit" class="btn-main">
+                    <span>Login</span>
+                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path d="M5 12h14"></path>
+                        <path d="M12 5l7 7-7 7"></path>
+                    </svg>
+                </button>
+
+                <p class="switch-text">
+                    Don't have an account?
+                    <span class="switch" id="toSignup">Sign Up</span>
+                </p>
+            </form>
+        </div>
+
+        <div class="overlay-container">
+            <div class="overlay">
+                <div class="overlay-panel overlay-left">
+                    <div class="overlay-logo">Fin<span>vest</span></div>
+                    <h1>Welcome to Finvest</h1>
+                    <p>Start managing your wealth smarter. Your financial future begins here.</p>
+                </div>
+
+                <div class="overlay-panel overlay-right">
+                    <div class="overlay-logo">Fin<span>vest</span></div>
+                    <h1>Welcome Back</h1>
+                    <p>Login to continue your financial journey and track your portfolio.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const container = document.getElementById("container");
+        const mode = "{{ mode }}";
+        const flash = document.getElementById("flash-overlay");
+        const btn = document.getElementById("flash-ok");
+
+        if (mode === "signup") {
+            container.classList.add("right-panel-active");
+        } else {
+            container.classList.remove("right-panel-active");
+        }
+
+        document.getElementById("toLogin").onclick = () => {
+            container.classList.remove("right-panel-active");
+        };
+
+        document.getElementById("toSignup").onclick = () => {
+            container.classList.add("right-panel-active");
+        };
+
+        if (btn) {
+            btn.onclick = () => {
+                flash.remove();
+            };
+        }
+
+        setTimeout(() => {
+            if (flash) flash.remove();
+        }, 3500);
+    </script>
+</body>
+</html>

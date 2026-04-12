@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@500;600&display=swap">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+</head>
+<body>
+    <aside class="sidebar">
+        <div class="logo">
+            Fin<span>vest</span>
+        </div>
+        <nav class="nav">
+            <a class="nav-item active">Dashboard</a>
+            <a class="nav-item">Transactions</a>
+            <a class="nav-item">Categories</a>
+            <a class="nav-item">Budgets</a>
+            <a class="nav-item">Reports</a>
+            <a class="nav-item">Goals</a>
+            <a class="nav-item">Notifications</a>
+            <a class="nav-item">Settings</a>
+        </nav>
+        <a href="{{ url_for('auth.logout') }}" class="logout">Logout</a>
+    </aside>
+
+    <div class="main">
+        <header class="header">
+            <h1>Dashboard</h1>
+            <div class="header-right">
+                <div class="avatar"></div>
+            </div>
+        </header>
+
+        <div class="content">
+            <div class="center">
+                <div class="welcome">
+                    <h2>Welcome back, {{ session.get('username', 'User') }}</h2>
+                    <p>Here's an overview of your finances.</p>
+                </div>
+
+                <div class="grid-2">
+                    <div class="card">
+                        <div class="card-title">Total Balance</div>
+                        <div class="card-value">Rs. 1,20,500</div>
+                        <div class="chart">
+                            <div class="line gold"></div>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card-title">Monthly Income</div>
+                        <div class="card-value">Rs. 75,000</div>
+                        <div class="chart">
+                            <div class="line blue"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid-2">
+                    <div class="card">
+                        <div class="card-title">Income vs Expenses</div>
+                        <div class="budget">
+                            <div class="budget-item">
+                                <span>Transport</span>
+                                <span>Rs. 8,500</span>
+                                <div class="bar">
+                                    <div style="width: 100%"></div>
+                                </div>
+                            </div>
+                            <div class="budget-item">
+                                <span>Shopping</span>
+                                <span class="warn">Rs. 14,500</span>
+                                <div class="bar red">
+                                    <div style="width: 90%"></div>
+                                </div>
+                            </div>
+                            <div class="budget-item">
+                                <span>Food</span>
+                                <span class="warn">Rs. 12,500</span>
+                                <div class="bar red">
+                                    <div style="width: 60%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-title">Budget Overview</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="right">
+                <div class="panel">
+                    <div class="panel-header">
+                        <span>Recent Transactions</span>
+                        <span class="link">Clear All</span>
+                    </div>
+                    <div class="tx">
+                        <span>Rent</span>
+                        <span>Rs. 12,000</span>
+                    </div>
+                    <div class="tx">
+                        <span>Grocerires</span>
+                        <span>Rs. 2,500</span>
+                    </div>
+                </div>
+
+                <div class="panel">
+                    <div class="panel-header">
+                        <span>Notifications</span>
+                    </div>
+                    <div class="notif">
+                        Budget exceeded for Food
+                    </div>
+                    <div class="notif">
+                        Electricity bill reminder
+                    </div>
+                </div>
+
+                <div class="panel">
+                    <div class="panel-header">
+                        <span>Saving Goals</span>
+                    </div>
+                    <div class="goal">
+                        <div class="circle">60%</div>
+                        <div>
+                            <div>New Laptop</div>
+                            <small>Rs. 80k / Rs. 1L</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

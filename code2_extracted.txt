@@ -1,0 +1,3468 @@
+--- PAGE 1 ---
+Auth_routes.py 
+from flask import Blueprint,render_template,request,redirect,url_for,flash,session 
+from app.models.user_model import User 
+from extensions.db import db 
+from datetime import datetime, timedelta 
+from werkzeug.security import generate_password_hash, check_password_hash 
+auth=Blueprint("auth" ,__name__) 
+@auth.route("/") 
+def onboarding(): 
+    return render_template("auth/onboarding.html") 
+ 
+  
+@auth.route("/auth") 
+def auth_page(): 
+    mode=request.args.get("mode" , "login") 
+    return render_template("auth/auth.html" , mode=mode) 
+ 
+  
+@auth.route("/register" , methods=["POST"]) 
+def register(): 
+    username=request.form.get("username") 
+    email=request.form.get("email") 
+    password=request.form.get("password") 
+    confirm_password=request.form.get("password") 
+ 
+  
+    if not username or not email or not password: 
+        flash("Please fill all fields") 
+        return redirect(url_for("auth.auth_page" , mode="signup")) 
+    
+    if password != confirm_password: 
+        flash("Passwords do not match") 
+
+--- PAGE 2 ---
+        return redirect(url_for("auth.auth_page" , mode="signup")) 
+ 
+  
+    existing_user=User.query.filter_by(email=email).first() 
+    if existing_user: 
+        flash("Email already registered") 
+        return redirect(url_for("auth.auth_page" , mode="signup")) 
+    
+    hashed_password=generate_password_hash(password) 
+ 
+  
+    new_user=User( 
+        name=username, 
+        email=email, 
+        password_hash=hashed_password, 
+        role="user" 
+    ) 
+ 
+  
+    db.session.add(new_user) 
+    db.session.commit() 
+ 
+  
+    session.pop('login_attempts' , None) 
+    session.pop('last_attempt_time' , None) 
+ 
+  
+    flash("Account created successfully! Please login") 
+ 
+  
+    return redirect(url_for("auth.auth_page" , mode="login")) 
+ 
+  
+
+--- PAGE 3 ---
+@auth.route("/login" ,methods=["POST"]) 
+def login(): 
+    email=request.form.get("email") 
+    password=request.form.get("password") 
+    if 'login_attempts' not in session: 
+        session['login_attempts']=0 
+        session['last_attempt_time']=str(datetime.utcnow()) 
+    last_time=datetime.fromisoformat(session['last_attempt_time']) 
+    if datetime.utcnow() - last_time > timedelta(minutes=2): 
+        session['login_attempts']=0 
+    if session['login_attempts']>=3: 
+        flash("Too many failed attempts. Try again after 2 minutes") 
+        return redirect(url_for("auth.auth_page" , mode="login")) 
+    user=User.query.filter_by(email=email).first() 
+    if not user: 
+        session['login_attempts']+=1 
+        session['last_attempt_time']=str(datetime.utcnow()) 
+        flash(f"User not found. Attempts left: {3-session['login_attempts']}") 
+        return redirect(url_for("auth.auth_page" , mode="login")) 
+    if not check_password_hash(user.password_hash,password): 
+        session['login_attempts']+=1 
+        session['last_attempt_time']=str(datetime.utcnow()) 
+        flash(f"Wrong Password! Attempts left: {3-session['login_attempts']}") 
+        return redirect(url_for("auth.auth_page" , mode="login")) 
+    session['user_id']=user.id 
+    session['username']=user.name 
+    session['role']=user.role 
+    session.pop('login_attempts' ,None) 
+    session.pop('last_attempt_time' , None) 
+    if user.role=="admin": 
+        return redirect(url_for("dashboard.admin_dashboard")) 
+
+--- PAGE 4 ---
+    else: 
+        return redirect(url_for("dashboard.home")) 
+ 
+  
+@auth.route("/logout") 
+def logout(): 
+    session.clear() 
+    flash("Logged out successfully") 
+    return redirect(url_for("auth.onboarding")) 
+ 
+ 
+ 
+ 
+dashboard_routes.py 
+from app.utils.decorators import login_required, admin_required 
+from flask import Blueprint, render_template 
+ 
+  
+dashboard = Blueprint("dashboard" ,__name__) 
+ 
+  
+@dashboard.route("/home") 
+@login_required 
+def home(): 
+    return render_template("dashboard/home.html") 
+ 
+  
+@dashboard.route("/admin") 
+@login_required 
+@admin_required 
+def admin_panel(): 
+    return render_template("dashboard/admin.html") 
+
+--- PAGE 5 ---
+ 
+  
+auth.css 
+@import 
+url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;600;700&famil
+y=DM+Sans:wght@300;400;500&display=swap'); 
+ 
+  
+* , *::before, *::after { 
+ 
+  
+    box-sizing: border-box; 
+ 
+  
+    margin: 0; 
+ 
+  
+    padding: 0; 
+ 
+  
+} 
+ 
+  
+:root { 
+ 
+  
+    --gold:        #C9A84C; 
+ 
+  
+    --gold-light:  #E5C97A; 
+ 
+  
+    --gold-dim:    rgba(201, 168, 76, 0.15); 
+ 
+  
+
+--- PAGE 6 ---
+    --dark:        #0A0D12; 
+ 
+  
+    --dark-2:      #111520; 
+ 
+  
+    --dark-3:      #1A2035; 
+ 
+  
+    --text:        #EAE6DF; 
+ 
+  
+    --muted:       #8A8F9E; 
+ 
+  
+    --border:      rgba(201, 168, 76, 0.18); 
+ 
+  
+    --input-bg:    rgba(255, 255, 255, 0.04); 
+ 
+  
+    --input-border:rgba(255, 255, 255, 0.1); 
+ 
+  
+} 
+ 
+  
+/* ── BASE ── */ 
+ 
+  
+html, body { 
+ 
+  
+    height: 100%; 
+
+--- PAGE 7 ---
+ 
+  
+    font-family: 'DM Sans' , sans-serif; 
+ 
+  
+    font-weight: 400; 
+ 
+  
+    background: var(--dark); 
+ 
+  
+    color: var(--text); 
+ 
+  
+    overflow: hidden; 
+ 
+  
+} 
+ 
+  
+body::before { 
+ 
+  
+    content: ''; 
+ 
+  
+    position: fixed; inset: 0; 
+ 
+  
+    background: 
+ 
+  
+        radial-gradient(ellipse 70% 60% at 15% 50%, rgba(30,50,120,0.2) 0%, transparent 60%), 
+ 
+  
+
+--- PAGE 8 ---
+        radial-gradient(ellipse 60% 60% at 85% 50%, rgba(201,168,76,0.06) 0%, transparent 60%); 
+ 
+  
+    pointer-events: none; z-index: 0; 
+ 
+  
+} 
+ 
+  
+/* ── NAV ── */ 
+ 
+  
+nav { 
+ 
+  
+    position: fixed; 
+ 
+  
+    top: 0; left: 0; right: 0; 
+ 
+  
+    z-index: 999; 
+ 
+  
+    height: 64px; 
+ 
+  
+    display: flex; 
+ 
+  
+    align-items: center; 
+ 
+  
+    padding: 0 2.5rem; 
+
+--- PAGE 9 ---
+ 
+  
+    border-bottom: 1px solid var(--border); 
+ 
+  
+    background: rgba(10,13,18,0.85); 
+ 
+  
+    backdrop-filter: blur(16px); 
+ 
+  
+    -webkit-backdrop-filter: blur(16px); 
+ 
+  
+} 
+ 
+  
+.logo { 
+ 
+  
+    font-family: 'Cormorant Garamond' , serif; 
+ 
+  
+    font-size: 1.75rem; 
+ 
+  
+    font-weight: 700; 
+ 
+  
+    letter-spacing: 0.04em; 
+ 
+  
+    color: var(--gold); 
+ 
+  
+
+--- PAGE 10 ---
+    text-decoration: none; 
+ 
+  
+} 
+ 
+  
+.logo span { color: var(--text); opacity: 0.85; } 
+ 
+  
+/* ── PAGE LAYOUT ── */ 
+ 
+  
+body { 
+ 
+  
+    display: flex; 
+ 
+  
+    justify-content: center; 
+ 
+  
+    align-items: center; 
+ 
+  
+} 
+ 
+  
+/* ── MAIN CONTAINER ── */ 
+ 
+  
+.container { 
+ 
+  
+    position: relative; 
+
+--- PAGE 11 ---
+ 
+  
+    z-index: 1; 
+ 
+  
+    background: var(--dark-2); 
+ 
+  
+    border: 1px solid var(--border); 
+ 
+  
+    border-radius: 20px; 
+ 
+  
+    overflow: hidden; 
+ 
+  
+    width: 920px; 
+ 
+  
+    max-width: calc(100vw - 2rem); 
+ 
+  
+    min-height: 580px; 
+ 
+  
+    margin-top: 64px; 
+ 
+  
+    box-shadow: 
+ 
+  
+        0 40px 80px rgba(0,0,0,0.5), 
+ 
+  
+
+--- PAGE 12 ---
+        inset 0 1px 0 rgba(255,255,255,0.04); 
+ 
+  
+} 
+ 
+  
+/* ── FORM CONTAINERS ── */ 
+ 
+  
+.form-container { 
+ 
+  
+    position: absolute; 
+ 
+  
+    top: 0; 
+ 
+  
+    height: 100%; 
+ 
+  
+    width: 50%; 
+ 
+  
+    transition: all 0.65s cubic-bezier(0.77, 0, 0.175, 1); 
+ 
+  
+    display: flex; 
+ 
+  
+    align-items: center; 
+ 
+  
+} 
+
+--- PAGE 13 ---
+ 
+  
+.sign-in { 
+ 
+  
+    left: 0; 
+ 
+  
+    z-index: 2; 
+ 
+  
+} 
+ 
+  
+.sign-up { 
+ 
+  
+    left: 0; 
+ 
+  
+    opacity: 0; 
+ 
+  
+    z-index: 1; 
+ 
+  
+    pointer-events: none; 
+ 
+  
+} 
+ 
+  
+.container.right-panel-active .sign-in { 
+ 
+  
+
+--- PAGE 14 ---
+    transform: translateX(100%); 
+ 
+  
+    opacity: 0; 
+ 
+  
+} 
+ 
+  
+.container.right-panel-active .sign-up { 
+ 
+  
+    transform: translateX(100%); 
+ 
+  
+    opacity: 1; 
+ 
+  
+    z-index: 5; 
+ 
+  
+    pointer-events: all; 
+ 
+  
+} 
+ 
+  
+/* ── FORM STYLING ── */ 
+ 
+  
+form { 
+ 
+  
+    width: 100%; 
+
+--- PAGE 15 ---
+ 
+  
+    display: flex; 
+ 
+  
+    flex-direction: column; 
+ 
+  
+    gap: 0.85rem; 
+ 
+  
+    padding: 2.75rem 2.75rem; 
+ 
+  
+} 
+ 
+  
+.form-header { 
+ 
+  
+    margin-bottom: 0.5rem; 
+ 
+  
+} 
+ 
+  
+.form-header h1 { 
+ 
+  
+    font-family: 'Cormorant Garamond' , serif; 
+ 
+  
+    font-size: 2rem; 
+ 
+  
+
+--- PAGE 16 ---
+    font-weight: 600; 
+ 
+  
+    letter-spacing: -0.01em; 
+ 
+  
+    color: var(--text); 
+ 
+  
+    margin-bottom: 0.3rem; 
+ 
+  
+} 
+ 
+  
+.form-header p { 
+ 
+  
+    font-size: 0.82rem; 
+ 
+  
+    color: var(--muted); 
+ 
+  
+    font-weight: 300; 
+ 
+  
+} 
+ 
+  
+/* ── INPUT GROUP ── */ 
+ 
+  
+.input-group { 
+
+--- PAGE 17 ---
+ 
+  
+    position: relative; 
+ 
+  
+    display: flex; 
+ 
+  
+    align-items: center; 
+ 
+  
+} 
+ 
+  
+.input-icon { 
+ 
+  
+    position: absolute; 
+ 
+  
+    left: 0.9rem; 
+ 
+  
+    color: var(--muted); 
+ 
+  
+    pointer-events: none; 
+ 
+  
+    transition: color 0.25s; 
+ 
+  
+    flex-shrink: 0; 
+ 
+  
+
+--- PAGE 18 ---
+    z-index: 1; 
+ 
+  
+} 
+ 
+  
+.input-group:focus-within .input-icon { 
+ 
+  
+    color: var(--gold); 
+ 
+  
+} 
+ 
+  
+input, 
+ 
+  
+select { 
+ 
+  
+    width: 100%; 
+ 
+  
+    background: var(--input-bg); 
+ 
+  
+    border: 1px solid var(--input-border); 
+ 
+  
+    border-radius: 10px; 
+ 
+  
+    color: var(--text); 
+
+--- PAGE 19 ---
+ 
+  
+    font-family: 'DM Sans' , sans-serif; 
+ 
+  
+    font-size: 0.875rem; 
+ 
+  
+    font-weight: 400; 
+ 
+  
+    padding: 0.78rem 1rem 0.78rem 2.6rem; 
+ 
+  
+    outline: none; 
+ 
+  
+    transition: border-color 0.25s, box-shadow 0.25s, background 0.25s; 
+ 
+  
+    -webkit-appearance: none; 
+ 
+  
+    appearance: none; 
+ 
+  
+} 
+ 
+  
+input::placeholder { 
+ 
+  
+    color: rgba(138, 143, 158, 0.55); 
+ 
+  
+
+--- PAGE 20 ---
+} 
+ 
+  
+input:focus, 
+ 
+  
+select:focus { 
+ 
+  
+    border-color: var(--gold); 
+ 
+  
+    background: rgba(201, 168, 76, 0.05); 
+ 
+  
+    box-shadow: 0 0 0 3px rgba(201, 168, 76, 0.12); 
+ 
+  
+} 
+ 
+  
+input:hover, 
+ 
+  
+select:hover { 
+ 
+  
+    border-color: rgba(201, 168, 76, 0.35); 
+ 
+  
+} 
+ 
+  
+/* ── SELECT DROPDOWN ── */ 
+
+--- PAGE 21 ---
+ 
+  
+/* .select-group { 
+ 
+  
+    position: relative; 
+ 
+  
+} 
+ 
+  
+.select-group select { 
+ 
+  
+    cursor: pointer; 
+ 
+  
+    padding-right: 2.5rem; 
+ 
+  
+} 
+ 
+  
+.select-group select option { 
+ 
+  
+    background: var(--dark-2); 
+ 
+  
+    color: var(--text); 
+ 
+  
+} 
+ 
+  
+
+--- PAGE 22 ---
+.select-arrow { 
+ 
+  
+    position: absolute; 
+ 
+  
+    right: 0.9rem; 
+ 
+  
+    color: var(--muted); 
+ 
+  
+    pointer-events: none; 
+ 
+  
+    transition: color 0.25s; 
+ 
+  
+} 
+ 
+  
+.select-group:focus-within .select-arrow { 
+ 
+  
+    color: var(--gold); 
+ 
+  
+} */ 
+ 
+  
+/* ── FORGOT PASSWORD ── */ 
+ 
+  
+.forgot { 
+
+--- PAGE 23 ---
+ 
+  
+    font-size: 0.75rem; 
+ 
+  
+    color: var(--muted); 
+ 
+  
+    text-decoration: none; 
+ 
+  
+    text-align: right; 
+ 
+  
+    margin-top: -0.25rem; 
+ 
+  
+    transition: color 0.2s; 
+ 
+  
+    letter-spacing: 0.02em; 
+ 
+  
+} 
+ 
+  
+.forgot:hover { color: var(--gold); } 
+ 
+  
+/* ── MAIN BUTTON ── */ 
+ 
+  
+.btn-main { 
+ 
+  
+
+--- PAGE 24 ---
+    display: flex; 
+ 
+  
+    align-items: center; 
+ 
+  
+    justify-content: center; 
+ 
+  
+    gap: 0.6rem; 
+ 
+  
+    width: 100%; 
+ 
+  
+    padding: 0.85rem 1.5rem; 
+ 
+  
+    margin-top: 0.25rem; 
+ 
+  
+    background: var(--gold); 
+ 
+  
+    border: 1px solid var(--gold); 
+ 
+  
+    border-radius: 10px; 
+ 
+  
+    font-family: 'DM Sans' , sans-serif; 
+ 
+  
+    font-size: 0.9rem; 
+
+--- PAGE 25 ---
+ 
+  
+    font-weight: 600; 
+ 
+  
+    letter-spacing: 0.06em; 
+ 
+  
+    text-transform: uppercase; 
+ 
+  
+    color: var(--dark); 
+ 
+  
+    cursor: pointer; 
+ 
+  
+    position: relative; 
+ 
+  
+    overflow: hidden; 
+ 
+  
+    transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1); 
+ 
+  
+} 
+ 
+  
+.btn-main::before { 
+ 
+  
+    content: ''; 
+ 
+  
+
+--- PAGE 26 ---
+    position: absolute; 
+ 
+  
+    inset: 0; 
+ 
+  
+    background: linear-gradient(135deg, rgba(255,255,255,0.2) 0%, transparent 60%); 
+ 
+  
+    opacity: 0; 
+ 
+  
+    transition: opacity 0.3s; 
+ 
+  
+} 
+ 
+  
+.btn-main::after { 
+ 
+  
+    content: ''; 
+ 
+  
+    position: absolute; 
+ 
+  
+    bottom: -2px; left: 50%; 
+ 
+  
+    transform: translateX(-50%); 
+ 
+  
+    width: 0; height: 2px; 
+
+--- PAGE 27 ---
+ 
+  
+    background: var(--dark); 
+ 
+  
+    border-radius: 2px; 
+ 
+  
+    transition: width 0.3s ease; 
+ 
+  
+} 
+ 
+  
+.btn-main:hover { 
+ 
+  
+    background: var(--gold-light); 
+ 
+  
+    border-color: var(--gold-light); 
+ 
+  
+    color: var(--dark); 
+ 
+  
+    transform: translateY(-2px); 
+ 
+  
+    box-shadow: 
+ 
+  
+        0 8px 25px rgba(201, 168, 76, 0.45), 
+ 
+  
+
+--- PAGE 28 ---
+        0 2px 8px rgba(201, 168, 76, 0.3); 
+ 
+  
+} 
+ 
+  
+.btn-main:hover::before { opacity: 1; } 
+ 
+  
+.btn-main:hover::after { width: 40%; } 
+ 
+  
+.btn-main:active { 
+ 
+  
+    transform: translateY(0px); 
+ 
+  
+    box-shadow: 0 4px 12px rgba(201, 168, 76, 0.3); 
+ 
+  
+} 
+ 
+  
+.btn-main svg { 
+ 
+  
+    transition: transform 0.3s ease; 
+ 
+  
+    flex-shrink: 0; 
+ 
+  
+} 
+
+--- PAGE 29 ---
+ 
+  
+.btn-main:hover svg { transform: translateX(4px); } 
+ 
+  
+/* ── SWITCH TEXT ── */ 
+ 
+  
+.switch-text { 
+ 
+  
+    font-size: 0.78rem; 
+ 
+  
+    color: var(--muted); 
+ 
+  
+    text-align: center; 
+ 
+  
+    font-weight: 300; 
+ 
+  
+} 
+ 
+  
+.switch { 
+ 
+  
+    color: var(--gold); 
+ 
+  
+    font-weight: 500; 
+ 
+  
+
+--- PAGE 30 ---
+    cursor: pointer; 
+ 
+  
+    border-bottom: 1px solid transparent; 
+ 
+  
+    transition: border-color 0.2s; 
+ 
+  
+    padding-bottom: 1px; 
+ 
+  
+} 
+ 
+  
+.switch:hover { border-color: var(--gold); } 
+ 
+  
+/* ── OVERLAY CONTAINER ── */ 
+ 
+  
+.overlay-container { 
+ 
+  
+    position: absolute; 
+ 
+  
+    top: 0; 
+ 
+  
+    left: 50%; 
+ 
+  
+    width: 50%; 
+
+--- PAGE 31 ---
+ 
+  
+    height: 100%; 
+ 
+  
+    overflow: hidden; 
+ 
+  
+    transition: transform 0.65s cubic-bezier(0.77, 0, 0.175, 1); 
+ 
+  
+    z-index: 10; 
+ 
+  
+    border-radius: 0 20px 20px 0; 
+ 
+  
+} 
+ 
+  
+.container.right-panel-active .overlay-container { 
+ 
+  
+    transform: translateX(-100%); 
+ 
+  
+    border-radius: 20px 0 0 20px; 
+ 
+  
+} 
+ 
+  
+/* ── OVERLAY ── */ 
+ 
+  
+
+--- PAGE 32 ---
+.overlay { 
+ 
+  
+    background: linear-gradient(145deg, #1a2035 0%, #0f1520 50%, #0A0D12 100%); 
+ 
+  
+    position: relative; 
+ 
+  
+    left: -100%; 
+ 
+  
+    width: 200%; 
+ 
+  
+    height: 100%; 
+ 
+  
+    transform: translateX(0); 
+ 
+  
+    transition: transform 0.65s cubic-bezier(0.77, 0, 0.175, 1); 
+ 
+  
+} 
+ 
+  
+/* Gold shimmer line at top of overlay */ 
+ 
+  
+.overlay::before { 
+ 
+  
+    content: ''; 
+
+--- PAGE 33 ---
+ 
+  
+    position: absolute; 
+ 
+  
+    top: 0; left: 0; right: 0; 
+ 
+  
+    height: 2px; 
+ 
+  
+    background: linear-gradient(90deg, transparent, var(--gold), transparent); 
+ 
+  
+    opacity: 0.6; 
+ 
+  
+} 
+ 
+  
+/* Subtle radial glow inside overlay */ 
+ 
+  
+.overlay::after { 
+ 
+  
+    content: ''; 
+ 
+  
+    position: absolute; inset: 0; 
+ 
+  
+    background: radial-gradient(ellipse 80% 60% at 50% 40%, rgba(201,168,76,0.07) 0%, transparent 
+70%); 
+
+--- PAGE 34 ---
+ 
+  
+    pointer-events: none; 
+ 
+  
+} 
+ 
+  
+.container.right-panel-active .overlay { 
+ 
+  
+    transform: translateX(50%); 
+ 
+  
+} 
+ 
+  
+/* ── OVERLAY PANELS ── */ 
+ 
+  
+.overlay-panel { 
+ 
+  
+    position: absolute; 
+ 
+  
+    display: flex; 
+ 
+  
+    flex-direction: column; 
+ 
+  
+    justify-content: center; 
+ 
+  
+
+--- PAGE 35 ---
+    align-items: center; 
+ 
+  
+    padding: 0 3rem; 
+ 
+  
+    text-align: center; 
+ 
+  
+    height: 100%; 
+ 
+  
+    width: 50%; 
+ 
+  
+    gap: 1rem; 
+ 
+  
+    transition: transform 0.65s cubic-bezier(0.77, 0, 0.175, 1); 
+ 
+  
+} 
+ 
+  
+.overlay-left { 
+ 
+  
+    left: 0; 
+ 
+  
+    transform: translateX(-20%); 
+ 
+  
+    opacity: 0; 
+
+--- PAGE 36 ---
+ 
+  
+    transition: transform 0.65s cubic-bezier(0.77, 0, 0.175, 1), opacity 0.4s ease; 
+ 
+  
+} 
+ 
+  
+.container.right-panel-active .overlay-left { 
+ 
+  
+    transform: translateX(0); 
+ 
+  
+    opacity: 1; 
+ 
+  
+} 
+ 
+  
+.overlay-right { 
+ 
+  
+    right: 0; 
+ 
+  
+    transform: translateX(0); 
+ 
+  
+    opacity: 1; 
+ 
+  
+    transition: transform 0.65s cubic-bezier(0.77, 0, 0.175, 1), opacity 0.4s ease; 
+ 
+  
+
+--- PAGE 37 ---
+} 
+ 
+  
+.container.right-panel-active .overlay-right { 
+ 
+  
+    transform: translateX(20%); 
+ 
+  
+    opacity: 0; 
+ 
+  
+} 
+ 
+  
+/* ── OVERLAY LOGO ── */ 
+ 
+  
+.overlay-logo { 
+ 
+  
+    font-family: 'Cormorant Garamond' , serif; 
+ 
+  
+    font-size: 2rem; 
+ 
+  
+    font-weight: 700; 
+ 
+  
+    letter-spacing: 0.04em; 
+ 
+  
+    color: var(--gold); 
+
+--- PAGE 38 ---
+ 
+  
+    margin-bottom: 0.5rem; 
+ 
+  
+} 
+ 
+  
+.overlay-logo span { 
+ 
+  
+    color: var(--text); 
+ 
+  
+    opacity: 0.85; 
+ 
+  
+} 
+ 
+  
+/* ── OVERLAY TEXT ── */ 
+ 
+  
+.overlay-panel h1 { 
+ 
+  
+    font-family: 'Cormorant Garamond' , serif; 
+ 
+  
+    font-size: 1.75rem; 
+ 
+  
+    font-weight: 600; 
+ 
+  
+
+--- PAGE 39 ---
+    color: var(--text); 
+ 
+  
+    line-height: 1.2; 
+ 
+  
+    letter-spacing: -0.01em; 
+ 
+  
+} 
+ 
+  
+.overlay-panel p { 
+ 
+  
+    font-size: 0.85rem; 
+ 
+  
+    font-weight: 300; 
+ 
+  
+    color: var(--muted); 
+ 
+  
+    line-height: 1.65; 
+ 
+  
+    max-width: 220px; 
+ 
+  
+} 
+ 
+  
+/* ── GOLD DIVIDER UNDER OVERLAY LOGO ── */ 
+
+--- PAGE 40 ---
+ 
+  
+.overlay-panel::after { 
+ 
+  
+    content: ''; 
+ 
+  
+    display: block; 
+ 
+  
+    order: 1; 
+ 
+  
+    width: 36px; 
+ 
+  
+    height: 1px; 
+ 
+  
+    background: var(--gold); 
+ 
+  
+    opacity: 0.5; 
+ 
+  
+    margin: -0.25rem 0 0.25rem; 
+ 
+  
+} 
+ 
+  
+/* ── RESPONSIVE ── */ 
+ 
+  
+
+--- PAGE 41 ---
+@media (max-width: 700px) { 
+ 
+  
+    .container { 
+ 
+  
+        min-height: unset; 
+ 
+  
+        width: 100%; 
+ 
+  
+        border-radius: 0; 
+ 
+  
+        margin-top: 64px; 
+ 
+  
+        height: calc(100vh - 64px); 
+ 
+  
+        overflow-y: auto; 
+ 
+  
+    } 
+ 
+  
+    .overlay-container { display: none; } 
+ 
+  
+    .form-container { 
+ 
+  
+        width: 100%; 
+
+--- PAGE 42 ---
+ 
+  
+        position: relative; 
+ 
+  
+        top: unset; 
+ 
+  
+    } 
+ 
+  
+    .sign-in, 
+ 
+  
+    .sign-up { 
+ 
+  
+        position: relative; 
+ 
+  
+        display: none; 
+ 
+  
+    } 
+ 
+  
+    .sign-in { display: flex; } 
+ 
+  
+    .container.right-panel-active .sign-in { display: none; transform: none; } 
+ 
+  
+    .container.right-panel-active .sign-up { display: flex; transform: none; position: relative; } 
+ 
+  
+
+--- PAGE 43 ---
+    form { padding: 2rem 1.5rem; } 
+ 
+  
+} 
+ 
+  
+#flash-overlay{ 
+    position: fixed; 
+    top:0; 
+    left:0; 
+    width: 100%; 
+    height: 100%; 
+    background: rgba(10, 13, 18, 0.75); 
+    backdrop-filter: blur(6px); 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    flex-direction: column; 
+    z-index: 9999; 
+    animation: fadeIn 0.3s ease; 
+} 
+ 
+  
+.flash-box{ 
+    background: var(--dark-2); 
+    border: 1px solid var(--border); 
+    color: var(--text); 
+    padding: 2rem 2.5rem; 
+    border-radius: 16px; 
+    width: 320px; 
+    text-align: center; 
+    box-shadow: 
+
+--- PAGE 44 ---
+        0 30px 80px rgba(0,0,0,0.6), 
+        0 0 0 1px rgba(201, 168, 76, 0, 1); 
+    animation: popup 0.4s ease; 
+} 
+ 
+  
+.flash-text{ 
+    font-size: 1rem; 
+    font-weight: 600; 
+    color: var(--text); 
+    margin-bottom: 1.5rem; 
+    line-height: 1.5; 
+} 
+ 
+  
+#flask-ok{ 
+    background: var(--gold); 
+    border: none; 
+    padding: 0.6rem, 1.6rem; 
+    border-radius: 6px; 
+    font-weight: 600; 
+    cursor: pointer; 
+    transition: 0.25s; 
+} 
+ 
+  
+#flash-ok:hover{ 
+    background:var(--gold-light); 
+    transform: translateY(-2px); 
+} 
+@keyframes popup { 
+    from{ 
+
+--- PAGE 45 ---
+        transform: scale(0.85); 
+        opacity: 0; 
+    } 
+    to{ 
+        transform: scale(1); 
+        opacity: 1; 
+    } 
+} 
+ 
+  
+@keyframes fadeIn { 
+    from{ 
+        opacity: 0; 
+    } 
+    to{ 
+        opacity: 1; 
+    } 
+    
+} 
+ 
+  
+dashboard.css 
+body{ 
+    margin: 0; 
+    font-family: 'DM Sans' , sans-serif; 
+    background: #0A0D12; 
+    color: #EAE6DF; 
+    display: flex; 
+} 
+ 
+  
+.sidebar{ 
+
+--- PAGE 46 ---
+    width: 220px; 
+    background: #111520; 
+    padding: 20px; 
+    display: flex; 
+    flex-direction: column; 
+ 
+  
+} 
+ 
+  
+.logo{ 
+    font-size: 20px; 
+    font-weight: 700; 
+    color: #C9A84C; 
+    margin-bottom: 20px; 
+} 
+ 
+  
+.nav-item{ 
+    padding: 10px; 
+    color: #8A8F9E; 
+    cursor: pointer; 
+} 
+ 
+  
+.nav-item:hover, 
+.nav-item.active{ 
+    color: #C9A84C; 
+} 
+ 
+  
+.logout{ 
+
+--- PAGE 47 ---
+    margin-top: auto; 
+    color: #8A8F9E; 
+} 
+ 
+  
+.main{ 
+    flex: 1; 
+    display: flex; 
+    flex-direction: column; 
+} 
+ 
+  
+.header{ 
+    padding: 15px 20px; 
+    border-radius: 1px solid rgba(255,255,255,0.1); 
+} 
+ 
+  
+.content{ 
+    display: flex; 
+    flex: 1; 
+} 
+ 
+  
+.center{ 
+    flex: 1; 
+    padding: 20px; 
+} 
+ 
+  
+.right{ 
+    width: 280px; 
+
+--- PAGE 48 ---
+    border-left: 1px solid rgba(255,255,255,0.1); 
+    padding: 20px; 
+} 
+ 
+  
+.grid-2{ 
+    display: grid; 
+    grid-template-columns: 1fr 1fr; 
+    gap: 15px; 
+    margin-top: 15px; 
+} 
+ 
+  
+.chart{ 
+    height: 60px; 
+    margin-top: 10px; 
+    position: relative; 
+} 
+ 
+  
+.line{ 
+    height: 2px; 
+    width: 100px; 
+    border-radius: 2px; 
+} 
+ 
+  
+.line.gold{ 
+    background: linear-gradient(90deg,#C9A84C, transparent); 
+} 
+ 
+  
+
+--- PAGE 49 ---
+.line.blue{ 
+    background: linear-gradient(90deg,#4f8ef7,transparent); 
+} 
+ 
+  
+.big-chart{ 
+    height: 120px; 
+    background: linear-gradient(180deg, rgba(201,168,76,0.1),transparent); 
+    border-radius: 10px; 
+    margin-top: 10px; 
+} 
+ 
+  
+.budget-item{ 
+    margin-top: 10px; 
+} 
+ 
+  
+.bar{ 
+    height: 5px; 
+    background: #1A2035; 
+    border-radius: 10px; 
+    margin-top: 5px; 
+} 
+ 
+  
+.bar div{ 
+    height: 100%; 
+    background: #4f8ef7; 
+    border-radius: 10px; 
+} 
+
+--- PAGE 50 ---
+ 
+  
+.bar .red div{ 
+    background: #e07070; 
+} 
+ 
+  
+.warn{ 
+    color: #e07070; 
+} 
+ 
+  
+.card{ 
+    background: #111520; 
+    border: 1px solid rgba(201,168,76,0.15); 
+    padding: 18px; 
+    border-radius: 14px; 
+} 
+ 
+  
+.card-title{ 
+    font-size: 20px; 
+    color: #8A8F9E; 
+} 
+ 
+  
+.card-value{ 
+    font-size: 22px; 
+    color: #C9A84C; 
+    font-weight: 600; 
+    margin-top: 6px; 
+} 
+
+--- PAGE 51 ---
+ 
+  
+.card-value.up{ 
+    color: #5ECB8C; 
+} 
+ 
+  
+.tx{ 
+    display: flex; 
+    justify-content: space-between; 
+    padding: 8px 0; 
+} 
+ 
+  
+.notif{ 
+    background: #1A2035; 
+    padding: 10px; 
+    border-radius: 8px; 
+    margin-bottom: 8px; 
+    font-size: 13px; 
+} 
+ 
+  
+.panel{ 
+    background: #111520; 
+    border: 1px solid rgba(201,168,76,0.1); 
+    border-radius: 12px; 
+    padding: 15px; 
+    margin-bottom: 15px; 
+} 
+ 
+  
+
+--- PAGE 52 ---
+.panel-header{ 
+    display: flex; 
+    justify-content: space-between; 
+    font-size: 13px; 
+    margin-bottom: 10px; 
+} 
+ 
+  
+.link{ 
+    color: #C9A84C; 
+    cursor: pointer; 
+} 
+ 
+  
+.goal{ 
+    display: flex; 
+    gap: 10px; 
+    align-items: center; 
+} 
+ 
+  
+.circle{ 
+    width: 50px; 
+    height: 50px; 
+    border-radius: 50%; 
+    background: #1A2035; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    color: #C9A84C; 
+    font-weight: 600; 
+} 
+
+--- PAGE 53 ---
+onboarding.css 
+* , *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; } 
+ 
+  
+    :root { 
+ 
+  
+      --gold:       #C9A84C; 
+ 
+  
+      --gold-light: #E5C97A; 
+ 
+  
+      --dark:       #0A0D12; 
+ 
+  
+      --dark-2:     #111520; 
+ 
+  
+      --dark-3:     #1A2035; 
+ 
+  
+      --text:       #EAE6DF; 
+ 
+  
+      --muted:      #8A8F9E; 
+ 
+  
+      --border:     rgba(201,168,76,0.18); 
+ 
+  
+    } 
+ 
+  
+
+--- PAGE 54 ---
+    html, body { 
+ 
+  
+      height: 100%; 
+ 
+  
+      font-family: 'DM Sans' , sans-serif; 
+ 
+  
+      background: var(--dark); 
+ 
+  
+      color: var(--text); 
+ 
+  
+      overflow-x: hidden; 
+ 
+  
+    } 
+ 
+  
+    body::before { 
+ 
+  
+      content: ''; 
+ 
+  
+      position: fixed; inset: 0; 
+ 
+  
+      background: 
+ 
+  
+        radial-gradient(ellipse 80% 60% at 70% 20%, rgba(201,168,76,0.08) 0%, transparent 60%), 
+
+--- PAGE 55 ---
+ 
+  
+        radial-gradient(ellipse 60% 80% at 10% 80%, rgba(30,50,100,0.25) 0%, transparent 60%), 
+ 
+  
+        radial-gradient(ellipse 40% 40% at 90% 85%, rgba(201,168,76,0.05) 0%, transparent 50%); 
+ 
+  
+      pointer-events: none; z-index: 0; 
+ 
+  
+    } 
+ 
+  
+    nav { 
+ 
+  
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100; 
+ 
+  
+      display: flex; align-items: center; justify-content: space-between; 
+ 
+  
+      padding: 0 3rem; height: 72px; 
+ 
+  
+      border-bottom: 1px solid var(--border); 
+ 
+  
+      background: rgba(10,13,18,0.75); 
+ 
+  
+      backdrop-filter: blur(18px); 
+ 
+  
+
+--- PAGE 56 ---
+      animation: slideDown 0.6s ease both; 
+ 
+  
+    } 
+ 
+  
+    @keyframes slideDown { 
+ 
+  
+      from { opacity: 0; transform: translateY(-16px); } 
+ 
+  
+      to   { opacity: 1; transform: translateY(0); } 
+ 
+  
+    } 
+ 
+  
+    .logo { 
+ 
+  
+      font-family: 'Cormorant Garamond' , serif; 
+ 
+  
+      font-size: 1.8rem; font-weight: 700; 
+ 
+  
+      letter-spacing: 0.04em; color: var(--gold); 
+ 
+  
+    } 
+ 
+  
+    .logo span { color: var(--text); opacity: 0.85; } 
+
+--- PAGE 57 ---
+ 
+  
+    .nav-actions { display: flex; gap: 0.75rem; align-items: center; } 
+ 
+  
+    .btn { 
+ 
+  
+      font-family: 'DM Sans' , sans-serif; 
+ 
+  
+      font-size: 0.875rem; font-weight: 500; 
+ 
+  
+      letter-spacing: 0.04em; border-radius: 4px; 
+ 
+  
+      padding: 0.55rem 1.4rem; cursor: pointer; 
+ 
+  
+      transition: all 0.25s ease; 
+ 
+  
+      text-decoration: none; display: inline-flex; align-items: center; 
+ 
+  
+    } 
+ 
+  
+    .btn-ghost { 
+ 
+  
+      background: transparent; border: 1px solid var(--border); color: var(--text); 
+ 
+  
+
+--- PAGE 58 ---
+    } 
+ 
+  
+    .btn-ghost:hover { border-color: var(--gold); color: var(--gold); } 
+ 
+  
+    .btn-primary { 
+ 
+  
+      background: var(--gold); border: 1px solid var(--gold); color: var(--dark); font-weight: 600; 
+      border: 1px solid var(--gold); 
+      color: var(--dark); 
+      font-weight: 600; 
+ 
+  
+    } 
+ 
+  
+    .btn-primary:hover { 
+ 
+  
+      background: var(--gold-light); border-color: var(--gold-light); 
+ 
+  
+      transform: translateY(-2px); box-shadow: 0 8px 24px rgba(201,168,76,0.3); 
+ 
+  
+    } 
+ 
+  
+    .hero { 
+ 
+  
+      position: relative; z-index: 1; min-height: 100vh; 
+
+--- PAGE 59 ---
+ 
+  
+      display: grid; grid-template-columns: 1fr 1fr; 
+ 
+  
+      align-items: center; gap: 4rem; 
+ 
+  
+      padding: 72px 5% 0; max-width: 1300px; margin: 0 auto; 
+ 
+  
+    } 
+ 
+  
+    .hero-left { animation: fadeUp 0.9s 0.2s ease both; } 
+ 
+  
+    @keyframes fadeUp { 
+ 
+  
+      from { opacity: 0; transform: translateY(32px); } 
+ 
+  
+      to   { opacity: 1; transform: translateY(0); } 
+ 
+  
+    } 
+ 
+  
+    .eyebrow { 
+ 
+  
+      display: inline-flex; align-items: center; gap: 0.5rem; 
+ 
+  
+
+--- PAGE 60 ---
+      font-size: 0.72rem; font-weight: 500; letter-spacing: 0.2em; 
+ 
+  
+      text-transform: uppercase; color: var(--gold); margin-bottom: 1.5rem; 
+ 
+  
+    } 
+ 
+  
+    .eyebrow::before { content: ''; width: 28px; height: 1px; background: var(--gold); } 
+ 
+  
+    h1 { 
+ 
+  
+      font-family: 'Cormorant Garamond' , serif; 
+ 
+  
+      font-size: clamp(3rem, 5.5vw, 5.5rem); 
+ 
+  
+      font-weight: 300; line-height: 1.05; 
+ 
+  
+      letter-spacing: -0.01em; margin-bottom: 1.75rem; 
+ 
+  
+    } 
+ 
+  
+    h1 em { font-style: italic; color: var(--gold); } 
+ 
+  
+    .hero-desc { 
+
+--- PAGE 61 ---
+ 
+  
+      font-size: 1.05rem; line-height: 1.75; color: var(--muted); 
+ 
+  
+      max-width: 480px; margin-bottom: 2.75rem; 
+ 
+  
+    } 
+ 
+  
+    .hero-cta { display: flex; gap: 1rem; align-items: center; } 
+ 
+  
+    .btn-lg { padding: 0.85rem 2.2rem; font-size: 0.95rem; } 
+ 
+  
+    .hero-note { 
+ 
+  
+      font-size: 0.78rem; color: var(--muted); 
+ 
+  
+      display: flex; align-items: center; gap: 0.4rem; 
+ 
+  
+    } 
+ 
+  
+    .hero-right { animation: fadeUp 0.9s 0.45s ease both; position: relative; } 
+ 
+  
+    .dashboard-card { 
+ 
+  
+
+--- PAGE 62 ---
+      background: var(--dark-2); border: 1px solid var(--border); 
+ 
+  
+      border-radius: 16px; padding: 1.75rem; 
+ 
+  
+      box-shadow: 0 40px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.04); 
+ 
+  
+      position: relative; overflow: hidden; 
+ 
+  
+    } 
+ 
+  
+    .dashboard-card::before { 
+ 
+  
+      content: ''; position: absolute; top: -60px; right: -60px; 
+ 
+  
+      width: 200px; height: 200px; border-radius: 50%; 
+ 
+  
+      background: radial-gradient(circle, rgba(201,168,76,0.12), transparent 70%); 
+ 
+  
+      pointer-events: none; 
+ 
+  
+    } 
+ 
+  
+    .card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 
+1.5rem; } 
+
+--- PAGE 63 ---
+ 
+  
+    .card-title { font-size: 0.75rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--
+muted); } 
+ 
+  
+    .badge { 
+ 
+  
+      font-size: 0.7rem; padding: 0.2rem 0.55rem; border-radius: 20px; 
+ 
+  
+      background: rgba(201,168,76,0.12); color: var(--gold); border: 1px solid rgba(201,168,76,0.25); 
+ 
+  
+    } 
+ 
+  
+    .portfolio-value { 
+ 
+  
+      font-family: 'Cormorant Garamond' , serif; 
+ 
+  
+      font-size: 2.75rem; font-weight: 600; letter-spacing: -0.02em; margin-bottom: 0.3rem; 
+ 
+  
+    } 
+ 
+  
+    .portfolio-change { 
+ 
+  
+      font-size: 0.82rem; color: #5ECB8C; 
+
+--- PAGE 64 ---
+ 
+  
+      display: flex; align-items: center; gap: 0.3rem; margin-bottom: 1.75rem; 
+ 
+  
+    } 
+ 
+  
+    .mini-chart { height: 80px; margin-bottom: 1.75rem; } 
+ 
+  
+    .mini-chart svg { width: 100%; height: 100%; } 
+ 
+  
+    .assets { display: flex; flex-direction: column; gap: 0.9rem; } 
+ 
+  
+    .asset-row { display: flex; align-items: center; gap: 0.85rem; } 
+ 
+  
+    .asset-icon { 
+ 
+  
+      width: 32px; height: 32px; border-radius: 8px; 
+ 
+  
+      display: flex; align-items: center; justify-content: center; 
+ 
+  
+      font-size: 0.75rem; font-weight: 700; flex-shrink: 0; 
+ 
+  
+    } 
+ 
+  
+
+--- PAGE 65 ---
+    .asset-info { flex: 1; } 
+ 
+  
+    .asset-name { font-size: 0.82rem; font-weight: 500; margin-bottom: 0.15rem; } 
+ 
+  
+    .asset-ticker { font-size: 0.7rem; color: var(--muted); } 
+ 
+  
+    .asset-bar-wrap { width: 80px; } 
+ 
+  
+    .asset-bar-bg { height: 4px; border-radius: 2px; background: rgba(255,255,255,0.06); overflow: 
+hidden; } 
+ 
+  
+    .asset-bar-fill { height: 100%; border-radius: 2px; background: var(--gold); } 
+ 
+  
+    .asset-val { text-align: right; font-size: 0.82rem; font-weight: 500; } 
+ 
+  
+    .asset-pct { font-size: 0.68rem; color: var(--muted); } 
+ 
+  
+    .float-card { 
+ 
+  
+      position: absolute; bottom: -24px; left: -32px; 
+ 
+  
+      background: var(--dark-3); border: 1px solid var(--border); 
+ 
+  
+      border-radius: 12px; padding: 1rem 1.25rem; width: 175px; 
+
+--- PAGE 66 ---
+ 
+  
+      box-shadow: 0 20px 50px rgba(0,0,0,0.4); 
+ 
+  
+      animation: float 4s ease-in-out infinite; 
+ 
+  
+    } 
+ 
+  
+    @keyframes float { 
+ 
+  
+      0%,100% { transform: translateY(0); } 
+ 
+  
+      50%      { transform: translateY(-8px); } 
+ 
+  
+    } 
+ 
+  
+    .float-label { font-size: 0.68rem; color: var(--muted); margin-bottom: 0.35rem; } 
+ 
+  
+    .float-val { font-family: 'Cormorant Garamond' , serif; font-size: 1.5rem; font-weight: 600; color: 
+#5ECB8C; } 
+ 
+  
+    .stats-bar { 
+ 
+  
+      position: relative; z-index: 1; 
+
+--- PAGE 67 ---
+ 
+  
+      border-top: 1px solid var(--border); 
+ 
+  
+      padding: 2.5rem 5%; max-width: 1300px; margin: 0 auto; 
+ 
+  
+      display: flex; gap: 3rem; 
+ 
+  
+      animation: fadeUp 0.9s 0.7s ease both; 
+ 
+  
+    } 
+ 
+  
+    .stat { flex: 1; } 
+ 
+  
+    .stat-num { 
+ 
+  
+      font-family: 'Cormorant Garamond' , serif; 
+ 
+  
+      font-size: 2rem; font-weight: 600; color: var(--gold); display: block; 
+ 
+  
+    } 
+ 
+  
+    .stat-label { font-size: 0.78rem; color: var(--muted); letter-spacing: 0.06em; } 
+ 
+  
+
+--- PAGE 68 ---
+    @media (max-width: 860px) { 
+ 
+  
+      .hero { grid-template-columns: 1fr; padding-top: 100px; } 
+ 
+  
+      .hero-right { display: none; } 
+ 
+  
+      .stats-bar { flex-wrap: wrap; gap: 1.5rem; } 
+ 
+  
+      nav { padding: 0 1.5rem; } 
+ 
+  
+    } 
+ 
+ 
+ 
+auth.html 
+<!DOCTYPE html> 
+ 
+  
+<html lang="en"> 
+ 
+  
+<head> 
+ 
+  
+    <meta charset="UTF-8" /> 
+ 
+  
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/> 
+
+--- PAGE 69 ---
+ 
+  
+    <title>Finvest | Auth</title> 
+ 
+  
+    <link 
+href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;600;700&fa
+mily=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/> 
+ 
+  
+    <link href="{{ url_for('static' , filename='css/auth.css') }}" rel="stylesheet"/> 
+ 
+  
+</head> 
+ 
+  
+<body> 
+ 
+ 
+ 
+  
+<nav> 
+ 
+  
+    <a href="{{ url_for('auth.onboarding') }}" class="logo"> 
+ 
+  
+        Fin<span>vest</span> 
+ 
+  
+    </a> 
+ 
+  
+</nav> 
+{% with messages = get_flashed_messages() %} 
+
+--- PAGE 70 ---
+    {% if messages %} 
+        <div id="flash-overlay"> 
+            <div class="flash-box"> 
+                {% for message in messages %} 
+                    <p class="flash-text">{{ message }}</p> 
+                {% endfor %} 
+                <button id="flash-ok">OK</button> 
+            </div> 
+        </div> 
+    {% endif %} 
+{% endwith %} 
+ 
+  
+<div class="container" id="container"> 
+ 
+ 
+ 
+  
+    <div class="form-container sign-up"> 
+ 
+  
+        <form method="POST" action="{{ url_for('auth.register') }}"> 
+ 
+  
+            <div class="form-header"> 
+ 
+  
+                <h1>Create Account</h1> 
+ 
+  
+                <p>Start your financial journey today</p> 
+ 
+  
+            </div> 
+
+--- PAGE 71 ---
+ 
+  
+            <div class="input-group"> 
+ 
+  
+                <svg class="input-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-
+width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 
+7"/></svg> 
+ 
+  
+                <input type="text" name="username" placeholder="Username" /> 
+ 
+  
+            </div> 
+ 
+  
+            <div class="input-group"> 
+ 
+  
+                <svg class="input-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-
+width="1.8" viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 7l10 
+7 10-7"/></svg> 
+ 
+  
+                <input type="email" name="email" placeholder="Email Address" /> 
+ 
+  
+            </div> 
+ 
+  
+            <!-- <div class="input-group select-group"> 
+ 
+  
+                <svg class="input-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-
+width="1.8" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" 
+cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg> 
+
+--- PAGE 72 ---
+ 
+  
+                <select name="role"> 
+ 
+  
+                    <option value="user" selected>User</option> 
+ 
+  
+                    <option value="admin">Admin</option> 
+ 
+  
+                </select> 
+ 
+  
+                <svg class="select-arrow" width="14" height="14" fill="none" stroke="currentColor" stroke-
+width="2" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg> 
+ 
+  
+            </div> --> 
+ 
+  
+            <div class="input-group"> 
+ 
+  
+                <svg class="input-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-
+width="1.8" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 
+11V7a4 4 0 018 0v4"/></svg> 
+ 
+  
+                <input type="password" name="password" placeholder="Password" /> 
+ 
+  
+            </div> 
+ 
+  
+
+--- PAGE 73 ---
+            <div class="input-group"> 
+ 
+  
+                <svg class="input-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-
+width="1.8" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4"/><rect x="5" y="11" width="14" height="10" 
+rx="2"/><path d="M8 11V7a4 4 0 018 0v4"/></svg> 
+ 
+  
+                <input type="password" name="confirm_password" placeholder="Confirm Password" /> 
+ 
+  
+            </div> 
+ 
+  
+            <button type="submit" class="btn-main"> 
+ 
+  
+                <span>Sign Up</span> 
+ 
+  
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 
+24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg> 
+ 
+  
+            </button> 
+ 
+  
+            <p class="switch-text"> 
+ 
+  
+                Already have an account? 
+ 
+  
+                <span class="switch" id="toLogin">Login</span> 
+
+--- PAGE 74 ---
+ 
+  
+            </p> 
+ 
+  
+        </form> 
+ 
+  
+    </div> 
+ 
+ 
+ 
+  
+    <div class="form-container sign-in"> 
+ 
+  
+        <form method="POST" action="{{ url_for('auth.login') }}"> 
+ 
+  
+            <div class="form-header"> 
+ 
+  
+                <h1>Welcome Back</h1> 
+ 
+  
+                <p>Sign in to your account</p> 
+ 
+  
+            </div> 
+ 
+  
+            <div class="input-group"> 
+ 
+  
+
+--- PAGE 75 ---
+                <svg class="input-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-
+width="1.8" viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 7l10 
+7 10-7"/></svg> 
+ 
+  
+                <input type="email" name="email" placeholder="Email Address" /> 
+ 
+  
+            </div> 
+ 
+  
+            <div class="input-group"> 
+ 
+  
+                <svg class="input-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-
+width="1.8" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 
+11V7a4 4 0 018 0v4"/></svg> 
+ 
+  
+                <input type="password" name="password" placeholder="Password" /> 
+ 
+  
+            </div> 
+ 
+  
+            <a href="#" class="forgot">Forgot password?</a> 
+ 
+  
+            <button type="submit" class="btn-main"> 
+ 
+  
+                <span>Login</span> 
+ 
+  
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 
+24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg> 
+
+--- PAGE 76 ---
+ 
+  
+            </button> 
+ 
+  
+            <p class="switch-text"> 
+ 
+  
+                Don't have an account? 
+ 
+  
+                <span class="switch" id="toSignup">Sign Up</span> 
+ 
+  
+            </p> 
+ 
+  
+        </form> 
+ 
+  
+    </div> 
+ 
+ 
+ 
+  
+    <div class="overlay-container"> 
+ 
+  
+        <div class="overlay"> 
+ 
+  
+          
+ 
+  
+            <div class="overlay-panel overlay-left"> 
+
+--- PAGE 77 ---
+ 
+  
+                <div class="overlay-logo">Fin<span>vest</span></div> 
+ 
+  
+                <h1>Welcome to Finvest        </h1> 
+ 
+  
+                <p>Start managing your wealth smarter. Your financial future begins here.</p> 
+ 
+  
+            </div> 
+ 
+  
+            
+ 
+  
+            <div class="overlay-panel overlay-right"> 
+ 
+  
+                <div class="overlay-logo">Fin<span>vest</span></div> 
+ 
+  
+                <h1>Welcome Back          </h1> 
+ 
+  
+                <p>Login to continue your financial journey and track your portfolio.</p> 
+ 
+  
+            </div> 
+ 
+  
+        </div> 
+
+--- PAGE 78 ---
+ 
+  
+    </div> 
+ 
+  
+</div> 
+ 
+  
+<script> 
+ 
+  
+const container = document.getElementById('container'); 
+const mode="{{ mode }}"; 
+const flash = document.getElementById('flash-overlay'); 
+const btn=document.getElementById('flash-ok') 
+if (mode === "signup"){ 
+    container.classList.add('right-panel-active'); 
+} 
+else{ 
+    container.classList.remove('right-panel-active'); 
+} 
+ 
+  
+document.getElementById('toLogin').onclick = () => { 
+ 
+  
+    container.classList.remove('right-panel-active'); 
+ 
+  
+}; 
+ 
+  
+document.getElementById('toSignup').onclick = () => { 
+
+--- PAGE 79 ---
+ 
+  
+    container.classList.add('right-panel-active'); 
+ 
+  
+}; 
+ 
+  
+if(btn){ 
+    btn.onclick = () =>{ 
+        flash.remove(); 
+    } 
+} 
+ 
+  
+setTimeout(() => { 
+    if (flash) flash.remove(); 
+},3500); 
+ 
+  
+</script> 
+ 
+  
+</body> 
+ 
+  
+</html> 
+ 
+ 
+  
+ 
+ 
+ 
+ 
+
+--- PAGE 80 ---
+onboarding.html 
+<!DOCTYPE html> 
+ 
+  
+<html lang="en"> 
+ 
+  
+<head> 
+ 
+  
+  <meta charset="UTF-8" /> 
+ 
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/> 
+ 
+  
+  <title>Finvest – Grow Your Wealth</title> 
+ 
+  
+  <link href="{{ url_for('static' , filename='css/onboarding.css') }}" rel="stylesheet"/> 
+ 
+  
+</head> 
+ 
+  
+<body> 
+ 
+  
+  <nav> 
+ 
+  
+    <div class="logo">Fin<span>vest</span></div> 
+ 
+  
+
+--- PAGE 81 ---
+    <div class="nav-actions"> 
+ 
+  
+      <a href="{{ url_for('auth.auth_page') }}" class="btn btn-primary">Get Started</a> 
+ 
+  
+    </div> 
+ 
+  
+  </nav> 
+ 
+  
+  <section class="hero"> 
+ 
+ 
+  
+    <div class="hero-left"> 
+ 
+  
+      <div class="eyebrow">Wealth Intelligence Platform</div> 
+ 
+  
+      <h1> 
+ 
+  
+        Manage &amp; <em>grow</em><br> 
+ 
+  
+        your wealth<br> 
+ 
+  
+        smarter. 
+ 
+  
+      </h1> 
+
+--- PAGE 82 ---
+ 
+  
+      <p class="hero-desc"> 
+ 
+  
+        A finance application that helps individuals manage and grow their wealth through an interactive 
+dashboard — giving you clarity, control, and confidence over your financial future. 
+ 
+  
+      </p> 
+ 
+  
+      <div class="hero-cta"> 
+ 
+  
+        <a href="{{ url_for('auth.auth_page') }}" class="btn btn-primary btn-lg"> 
+ 
+  
+          Get Started Free 
+ 
+  
+        </a> 
+ 
+  
+        <span class="hero-note"> 
+ 
+  
+          <svg width="14" height="14" fill="none" stroke="#8A8F9E" stroke-width="1.5" viewBox="0 0 24 
+24"> 
+ 
+  
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/> 
+ 
+  
+          </svg> 
+
+--- PAGE 83 ---
+ 
+  
+          Bank-grade security 
+ 
+  
+        </span> 
+ 
+  
+      </div> 
+ 
+  
+    </div> 
+ 
+  
+    <div class="hero-right"> 
+ 
+  
+      <div class="dashboard-card"> 
+ 
+  
+        <div class="card-header"> 
+ 
+  
+          <span class="card-title">Portfolio Overview</span> 
+ 
+  
+          <span class="badge">● Live</span> 
+ 
+  
+        </div> 
+ 
+  
+        <div class="portfolio-value">$248,391.50</div> 
+ 
+  
+
+--- PAGE 84 ---
+        <div class="portfolio-change"> 
+ 
+  
+          <svg width="12" height="12" fill="currentColor" viewBox="0 0 24 24"> 
+ 
+  
+            <path d="M7 14l5-5 5 5"/> 
+ 
+  
+          </svg> 
+ 
+  
+          +$4,210.20 &nbsp;(+1.73%) today 
+ 
+  
+        </div> 
+ 
+  
+        <div class="mini-chart"> 
+ 
+  
+          <svg viewBox="0 0 400 80" preserveAspectRatio="none"> 
+ 
+  
+            <defs> 
+ 
+  
+              <linearGradient id="cg" x1="0" y1="0" x2="0" y2="1"> 
+ 
+  
+                <stop offset="0%" stop-color="#C9A84C" stop-opacity="0.3"/> 
+ 
+  
+                <stop offset="100%" stop-color="#C9A84C" stop-opacity="0"/> 
+
+--- PAGE 85 ---
+ 
+  
+              </linearGradient> 
+ 
+  
+            </defs> 
+ 
+  
+            <path d="M0,60 C40,55 60,45 100,40 C140,35 150,50 190,30 C230,10 260,25 300,20 C340,15 
+370,18 400,10 L400,80 L0,80 Z" fill="url(#cg)"/> 
+ 
+  
+            <path d="M0,60 C40,55 60,45 100,40 C140,35 150,50 190,30 C230,10 260,25 300,20 C340,15 
+370,18 400,10" fill="none" stroke="#C9A84C" stroke-width="2"/> 
+ 
+  
+          </svg> 
+ 
+  
+        </div> 
+ 
+  
+        <div class="assets"> 
+ 
+  
+          <div class="asset-row"> 
+ 
+  
+            <div class="asset-icon" style="background:rgba(94,203,140,0.12);color:#5ECB8C;">S</div> 
+ 
+  
+            <div class="asset-info"> 
+ 
+  
+              <div class="asset-name">S&amp;P 500 ETF</div> 
+
+--- PAGE 86 ---
+ 
+  
+              <div class="asset-ticker">SPY</div> 
+ 
+  
+            </div> 
+ 
+  
+            <div class="asset-bar-wrap"> 
+ 
+  
+              <div class="asset-bar-bg"><div class="asset-bar-fill" style="width:72%"></div></div> 
+ 
+  
+            </div> 
+ 
+  
+            <div class="asset-val"> 
+ 
+  
+              <div>$89,300</div> 
+ 
+  
+              <div class="asset-pct" style="color:#5ECB8C">+2.1%</div> 
+ 
+  
+            </div> 
+ 
+  
+          </div> 
+ 
+  
+          <div class="asset-row"> 
+ 
+  
+
+--- PAGE 87 ---
+            <div class="asset-icon" style="background:rgba(201,168,76,0.12);color:#C9A84C;">A</div> 
+ 
+  
+            <div class="asset-info"> 
+ 
+  
+              <div class="asset-name">Apple Inc.</div> 
+ 
+  
+              <div class="asset-ticker">AAPL</div> 
+ 
+  
+            </div> 
+ 
+  
+            <div class="asset-bar-wrap"> 
+ 
+  
+              <div class="asset-bar-bg"><div class="asset-bar-fill" style="width:48%"></div></div> 
+ 
+  
+            </div> 
+ 
+  
+            <div class="asset-val"> 
+ 
+  
+              <div>$52,140</div> 
+ 
+  
+              <div class="asset-pct" style="color:#5ECB8C">+0.8%</div> 
+ 
+  
+            </div> 
+
+--- PAGE 88 ---
+ 
+  
+          </div> 
+ 
+  
+          <div class="asset-row"> 
+ 
+  
+            <div class="asset-icon" style="background:rgba(100,120,240,0.12);color:#8090f0;">B</div> 
+ 
+  
+            <div class="asset-info"> 
+ 
+  
+              <div class="asset-name">BTC / USD</div> 
+ 
+  
+              <div class="asset-ticker">Bitcoin</div> 
+ 
+  
+            </div> 
+ 
+  
+            <div class="asset-bar-wrap"> 
+ 
+  
+              <div class="asset-bar-bg"><div class="asset-bar-fill" style="width:35%"></div></div> 
+ 
+  
+            </div> 
+ 
+  
+            <div class="asset-val"> 
+ 
+  
+
+--- PAGE 89 ---
+              <div>$38,900</div> 
+ 
+  
+              <div class="asset-pct" style="color:#e07070">−1.3%</div> 
+ 
+  
+            </div> 
+ 
+  
+          </div> 
+ 
+  
+        </div> 
+ 
+  
+      </div> 
+ 
+  
+      <div class="float-card"> 
+ 
+  
+        <div class="float-label">Monthly Return</div> 
+ 
+  
+        <div class="float-val">+$9,841</div> 
+ 
+  
+      </div> 
+ 
+  
+    </div> 
+ 
+  
+  </section> 
+
+--- PAGE 90 ---
+ 
+ 
+  
+  <div class="stats-bar"> 
+ 
+  
+    <div class="stat"><span class="stat-num">$2.4B+</span><span class="stat-label">Assets 
+tracked</span></div> 
+ 
+  
+    <div class="stat"><span class="stat-num">180K+</span><span class="stat-label">Active 
+investors</span></div> 
+ 
+  
+    <div class="stat"><span class="stat-num">99.9%</span><span class="stat-label">Uptime 
+SLA</span></div> 
+ 
+  
+    <div class="stat"><span class="stat-num">4.9 ★</span><span class="stat-label">App store 
+rating</span></div> 
+ 
+  
+  </div> 
+ 
+  
+</body> 
+ 
+  
+</html> 
+ 
+ 
+ 
+ 
+ 
+ 
+
+--- PAGE 91 ---
+admin.html 
+<h1>Admin Dashboard</h1> 
+<a href="{{ url_for('auth.logout') }}">Logout</a> 
+ 
+home.html 
+<!DOCTYPE html> 
+<html lang="en"> 
+<head> 
+    <meta charset="UTF-8"> 
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
+    <title>Dashboard</title> 
+    <link rel="stylesheet" 
+href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@500;600&display=swap"> 
+    <link rel="stylesheet" href="{{ url_for('static' , filename='css/dashboard.css') }}"> 
+</head> 
+<body> 
+    <aside class="sidebar"> 
+        <div class="logo"> 
+            Fin<span>vest</span> 
+        </div> 
+        <nav class="nav"> 
+            <a class="nav-item" active>Dashboard</a> 
+            <a class="nav-item">Transactions</a> 
+            <a class="nav-item">Categories</a> 
+            <a class="nav-item">Budgets</a> 
+            <a class="nav-item">Reports</a> 
+            <a class="nav-item">Goals</a> 
+            <a class="nav-item">Notifications</a> 
+            <a class="nav-item">Settings</a> 
+        </nav> 
+
+--- PAGE 92 ---
+ 
+  
+        <a href="{{ url_for('auth.logout') }}" class="logout">Logout</a> 
+    </aside> 
+ 
+  
+    <div class="main"> 
+        <header class="header"> 
+            <h1>Dashboard</h1> 
+            <div class="header-right"> 
+                <div class="avatar"></div> 
+            </div> 
+        </header> 
+ 
+  
+        <div class="content"> 
+            <div class="center"> 
+                <div class="welcome"> 
+                    <h2>Welcome back, {{ session.get('username' , 'User') }}</h2> 
+                    <p>Here's an overview of your finances.</p> 
+                </div> 
+ 
+  
+                <div class="grid-2"> 
+                    <div class="card"> 
+                        <div class="card-title">Total Balance</div> 
+                        <div class="card-value">Rs. 1,20,500</div> 
+                        <div class="chart"> 
+                            <div class="line gold"></div> 
+                        </div> 
+                    </div> 
+                    <div class="card"> 
+
+--- PAGE 93 ---
+                        <div class="card-title">Monthly Income</div> 
+                        <div class="card-value">Rs. 75,000</div> 
+                        <div class="chart"> 
+                            <div class="line blue"></div> 
+                        </div> 
+                    </div> 
+                </div> 
+                <div class="grid-2"> 
+                    <div class="card"> 
+                        <div class="card-title">Income vs Expenses</div> 
+                        <div class="budget"> 
+                            <div class="budget-item"> 
+                                <span>Transport</span> 
+                                <span>Rs. 8,500</span> 
+                                <div class="bar"> 
+                                    <div style="width: 100%"></div> 
+                                </div> 
+                            </div> 
+                            <div class="budget-item"> 
+                                <span>Shopping</span> 
+                                <span class="warn">Rs. 14,500</span> 
+                                <div class="bar red"> 
+                                    <div style="width: 90%"></div> 
+                                </div> 
+                            </div> 
+                            <div class="budget-item"> 
+                                <span>Food</span> 
+                                <span class="warn">Rs. 12,500</span> 
+                                <div class="bar red"> 
+                                    <div style="width: 60%"></div> 
+                                </div> 
+
+--- PAGE 94 ---
+                            </div> 
+                        </div> 
+                    </div> 
+ 
+  
+                    <div class="card"> 
+                        <div class="card-title">Budget Overview</div> 
+                    </div> 
+                </div> 
+            </div> 
+ 
+  
+            <div class="right"> 
+                <div class="panel"> 
+                    <div class="panel-header"> 
+                        <span>Recent Transactions</span> 
+                        <span class="link">Clear All</span> 
+                    </div> 
+                    <div class="tx"> 
+                        <span>Rent</span> 
+                        <span>Rs. 12,000</span> 
+                    </div> 
+ 
+  
+                    <div class="tx"> 
+                        <span>Grocerires</span> 
+                        <span>Rs. 2,500</span> 
+                    </div> 
+                </div> 
+ 
+  
+                <div class="panel"> 
+
+--- PAGE 95 ---
+                    <div class="panel-header"> 
+                        <span>Notifications</span> 
+                    </div> 
+                    <div class="notif"> 
+                        Budget exceeded for Food 
+                    </div> 
+ 
+  
+                    <div class="notif"> 
+                        Electricity bill reminder 
+                    </div> 
+                </div> 
+ 
+  
+                <div class="panel"> 
+                    <div class="panel-header"> 
+                        <span>Saving Goals</span> 
+                    </div> 
+                    <div class="goal"> 
+                        <div class="circle">60%</div> 
+                        <div> 
+                            <div>New Laptop</div> 
+                            <small>Rs. 80k / Rs. 1L</small> 
+                        </div> 
+                    </div> 
+                </div> 
+            </div> 
+        </div> 
+    </div> 
+</body> 
+</html> 
+
+--- PAGE 96 ---
+ 
+  
+decorators.py 
+from flask import session, redirect, url_for, flash 
+from functools import wraps 
+ 
+  
+def login_required(func): 
+    @wraps(func) 
+    def wrapper(*args, **kwargs): 
+        if 'user_id' not in session: 
+            flash("Please login first") 
+            return redirect(url_for("auth.auth_page" ,mode="login")) 
+        return func(*args, **kwargs) 
+    return wrapper 
+ 
+  
+def admin_required(func): 
+    @wraps(func) 
+    def wrapper(*args, **kwargs): 
+        if 'role' not in session or session['role'] != 'admin': 
+            flash("Access denied") 
+            return redirect(url_for("auth.auth_page")) 
+        return func(*args, **kwargs) 
+    return wrapper 
+ 
+ 
+ 
+init.py 
+from flask import Flask 
+from extensions.db import db 
+from app.models.user_model import User 
+
+--- PAGE 97 ---
+from app.routes.auth_routes import auth 
+from app.routes.dashboard_routes import dashboard 
+def create_app(): 
+    app = Flask(__name__) 
+    app.config['SECRET_KEY']='finvest_secret_123' 
+    app.config.from_object("config") 
+    db.init_app(app) 
+    app.register_blueprint(auth) 
+    app.register_blueprint(dashboard) 
+ 
+  
+    return app 
+ 
+ 
+ 
+  
+ 
+ 

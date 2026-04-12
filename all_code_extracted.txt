@@ -1,0 +1,589 @@
+--- PAGE 1 ---
+ 
+main  py  from  app  import  create_app   from  extensions.db  import  db       app  =  create_app()   with  app.app_context():       db.create_all()       if  __name__  ==  "__main__":       app.run(debug=True)       config.py SQLALCHEMY_DATABASE_URI  =  "mysql+pymysql://root:root@localhost/finvestdb"   SQLALCHEMY_TRACK_MODIFICATIONS=False     db.py from  flask_sqlalchemy  import  SQLAlchemy   db=SQLAlchemy()          
+
+--- PAGE 2 ---
+ 
+init  py  from  flask  import  Flask   from  extensions.db  import  db   from  app.models.user_model  import  User   from  app.routes.auth_routes  import  auth   def  create_app():       app  =  Flask(__name__)       app.config['SECRET_KEY']='finvest_secret_123'       app.config.from_object("config")       db.init_app(app)       app.register_blueprint(auth)           return  app                     
+
+--- PAGE 3 ---
+ 
+use  model  from  extensions.db  import  db       class  User(db.Model):       __tablename__  =  "users"       id=db.Column(db.Integer,  primary_key=True,  autoincrement=True)       name=db.Column(db.String(100),nullable=False)       email=db.Column(db.String(150),unique=True,nullable=False)       role=db.Column(db.Enum('user','admin'),server_default='user')       password_hash=db.Column(db.String(255),nullable=False)       created_at=db.Column(db.TIMESTAMP,server_default=db.func.current_timestamp())        auth  routes  from  app.models.user_model  import  User   from  extensions.db  import  db   from  werkzeug.security  import  generate_password_hash,  check_password_hash   auth=Blueprint("auth",__name__)   @auth.route("/")   def  onboarding():       return  render_template("auth/onboarding.html")      
+
+--- PAGE 4 ---
+ 
+ @auth.route("/auth")   def  auth_page():       return  render_template("auth/auth.html")       @auth.route("/register",  methods=["POST"])   def  register():       username=request.form.get("username")       email=request.form.get("email")       role=request.form.get("role")       password=request.form.get("password")       confirm_password=request.form.get("password")           if  not  username  or  not  email  or  not  password:           flash("Please  fill  all  fields")           return  redirect(url_for("auth.auth_page"))            if  password  !=  confirm_password:           flash("Passwords  do  not  match")           return  redirect(url_for("auth.auth_page"))       
+
+--- PAGE 5 ---
+ 
+    existing_user=User.query.filter_by(email=email).first()       if  existing_user:           flash("Email  already  registered")           return  redirect(url_for("auth.auth_page"))            hashed_password=generate_password_hash(password)           new_user=User(           name=username,           email=email,           password_hash=hashed_password,           role=role       )           db.session.add(new_user)       db.session.commit()           flash("Account  created  successfully!")           return  redirect(url_for("auth.auth_page"))   
+
+--- PAGE 6 ---
+ 
+    @auth.route("/login",methods=["POST"])   def  login():       email=request.form.get("email")       password=request.form.get("password")           user=User.query.filter_by(email=email).first()       if  not  user:           flash("User  not  found")           return  redirect(url_for("auth.auth_page"))       elif  not  check_password_hash(user.password_hash,password):           flash("Wrong  Password!!")           return  redirect(url_for("auth.auth_page"))       else:           if  user.role  ==  "admin":               return  redirect("/admin/dashboard")           else:               session['user_id']=user.id               session['role']=user.role               return  redirect("dashboard.home")     
+
+--- PAGE 7 ---
+ 
+ auth.html  <!DOCTYPE  html>       <html  lang="en">       <head>           <meta  charset="UTF-8"  />           <meta  name="viewport"  content="width=device-width,  initial-scale=1.0"/>           <title>Finvest  |  Auth</title>           <link  
+href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;600;700
+&family=DM+Sans:wght@300;400;500&display=swap"
+ 
+rel="stylesheet"/>
+          <link  href="{{  url_for('static',  filename='css/auth.css')  }}"  rel="stylesheet"/>       
+
+--- PAGE 8 ---
+ 
+</head>       <body>         <nav>           <a  href="{{  url_for('auth.onboarding')  }}"  class="logo">               Fin<span>vest</span>           </a>       </nav>       <div  class="container"  id="container">         
+
+--- PAGE 9 ---
+ 
+    <div  class="form-container  sign-up">               <form  method="POST"  action="{{  url_for('auth.register')  }}">                   <div  class="form-header">                       <h1>Create  Account</h1>                       <p>Start  your  financial  journey  today</p>                   </div>                   <div  class="input-group">                       <svg  class="input-icon"  width="16"  height="16"  fill="none"  stroke="currentColor"  
+stroke-width="1.8"
+ 
+viewBox="0
+ 
+0
+ 
+24
+ 
+24"><circle
+ 
+cx="12"
+ 
+cy="8"
+ 
+r="4"/><path
+ 
+d="M4
+ 
+20c0-4
+ 
+3.6-7
+ 
+8-7s8
+ 
+3
+ 
+8
+ 
+7"/></svg>
+                      <input  type="text"  name="username"  placeholder="Username"  />   
+
+--- PAGE 10 ---
+ 
+                </div>                   <div  class="input-group">                       <svg  class="input-icon"  width="16"  height="16"  fill="none"  stroke="currentColor"  
+stroke-width="1.8"
+ 
+viewBox="0
+ 
+0
+ 
+24
+ 
+24"><rect
+ 
+x="2"
+ 
+y="4"
+ 
+width="20"
+ 
+height="16"
+ 
+rx="2"/><path
+ 
+d="M2
+ 
+7l10
+ 
+7
+ 
+10-7"/></svg>
+                      <input  type="email"  name="email"  placeholder="Email  Address"  />                   </div>                   <div  class="input-group  select-group">                       <svg  class="input-icon"  width="16"  height="16"  fill="none"  stroke="currentColor"  
+stroke-width="1.8"
+ 
+viewBox="0
+ 
+0
+ 
+24
+ 
+24"><path
+ 
+d="M17
+ 
+21v-2a4
+ 
+4
+ 
+0
+ 
+00-4-4H5a4
+ 
+4
+ 
+0
+ 
+00-4
+ 
+4v2"/><circle
+ 
+cx="9"
+ 
+cy="7"
+ 
+r="4"/><path
+ 
+d="M23
+ 
+21v-2a4
+ 
+4
+ 
+0
+ 
+00-3-3.87M16
+ 
+3.13a4
+ 
+4
+ 
+0
+ 
+010
+ 
+7.75"/></svg>
+                      <select  name="role">  
+
+--- PAGE 11 ---
+ 
+                         <option  value="user"  selected>User</option>                           <option  value="admin">Admin</option>                       </select>                       <svg  class="select-arrow"  width="14"  height="14"  fill="none"  stroke="currentColor"  
+stroke-width="2"
+ 
+viewBox="0
+ 
+0
+ 
+24
+ 
+24"><path
+ 
+d="M6
+ 
+9l6
+ 
+6
+ 
+6-6"/></svg>
+                  </div>                   <div  class="input-group">                       <svg  class="input-icon"  width="16"  height="16"  fill="none"  stroke="currentColor"  
+stroke-width="1.8"
+ 
+viewBox="0
+ 
+0
+ 
+24
+ 
+24"><rect
+ 
+x="5"
+ 
+y="11"
+ 
+width="14"
+ 
+height="10"
+ 
+rx="2"/><path
+ 
+d="M8
+ 
+11V7a4
+ 
+4
+ 
+0
+ 
+018
+ 
+0v4"/></svg>
+                      <input  type="password"  name="password"  placeholder="Password"  />   
+
+--- PAGE 12 ---
+ 
+                </div>                   <div  class="input-group">                       <svg  class="input-icon"  width="16"  height="16"  fill="none"  stroke="currentColor"  
+stroke-width="1.8"
+ 
+viewBox="0
+ 
+0
+ 
+24
+ 
+24"><path
+ 
+d="M9
+ 
+12l2
+ 
+2
+ 
+4-4"/><rect
+ 
+x="5"
+ 
+y="11"
+ 
+width="14"
+ 
+height="10"
+ 
+rx="2"/><path
+ 
+d="M8
+ 
+11V7a4
+ 
+4
+ 
+0
+ 
+018
+ 
+0v4"/></svg>
+                      <input  type="password"  name="confirm_password"  placeholder="Confirm  Password"  
+/>
+                  </div>                   <button  type="submit"  class="btn-main">                       <span>Sign  Up</span>                       <svg  width="16"  height="16"  fill="none"  stroke="currentColor"  stroke-width="2"  
+viewBox="0
+ 
+0
+ 
+24
+ 
+24"><path
+ 
+d="M5
+ 
+12h14M12
+ 
+5l7
+ 
+7-7
+ 
+7"/></svg>
+  
+
+--- PAGE 13 ---
+ 
+                </button>                   <p  class="switch-text">                       Already  have  an  account?                       <span  class="switch"  id="toLogin">Login</span>                   </p>               </form>           </div>             <div  class="form-container  sign-in">      
+
+--- PAGE 14 ---
+ 
+         <form  method="POST"  action="{{  url_for('auth.login')  }}">                   <div  class="form-header">                       <h1>Welcome  Back</h1>                       <p>Sign  in  to  your  account</p>                   </div>                   <div  class="input-group">                       <svg  class="input-icon"  width="16"  height="16"  fill="none"  stroke="currentColor"  
+stroke-width="1.8"
+ 
+viewBox="0
+ 
+0
+ 
+24
+ 
+24"><rect
+ 
+x="2"
+ 
+y="4"
+ 
+width="20"
+ 
+height="16"
+ 
+rx="2"/><path
+ 
+d="M2
+ 
+7l10
+ 
+7
+ 
+10-7"/></svg>
+                      <input  type="email"  name="email"  placeholder="Email  Address"  />                   </div>  
+
+--- PAGE 15 ---
+ 
+                 <div  class="input-group">                       <svg  class="input-icon"  width="16"  height="16"  fill="none"  stroke="currentColor"  
+stroke-width="1.8"
+ 
+viewBox="0
+ 
+0
+ 
+24
+ 
+24"><rect
+ 
+x="5"
+ 
+y="11"
+ 
+width="14"
+ 
+height="10"
+ 
+rx="2"/><path
+ 
+d="M8
+ 
+11V7a4
+ 
+4
+ 
+0
+ 
+018
+ 
+0v4"/></svg>
+                      <input  type="password"  name="password"  placeholder="Password"  />                   </div>                   <a  href="#"  class="forgot">Forgot  password?</a>                   <button  type="submit"  class="btn-main">                       <span>Login</span>                       <svg  width="16"  height="16"  fill="none"  stroke="currentColor"  stroke-width="2"  
+viewBox="0
+ 
+0
+ 
+24
+ 
+24"><path
+ 
+d="M5
+ 
+12h14M12
+ 
+5l7
+ 
+7-7
+ 
+7"/></svg>
+  
+
+--- PAGE 16 ---
+ 
+                </button>                   <p  class="switch-text">                       Don't  have  an  account?                       <span  class="switch"  id="toSignup">Sign  Up</span>                   </p>               </form>           </div>             <div  class="overlay-container">      
+
+--- PAGE 17 ---
+ 
+         <div  class="overlay">                                  <div  class="overlay-panel  overlay-left">                       <div  class="overlay-logo">Fin<span>vest</span></div>                       <h1>Welcome  to  Finvest  🚀 </h1>                       <p>Start  managing  your  wealth  smarter.  Your  financial  future  begins  here.</p>                   </div>                                    <div  class="overlay-panel  overlay-right">    
+
+--- PAGE 18 ---
+ 
+                   <div  class="overlay-logo">Fin<span>vest</span></div>                       <h1>Welcome  Back  👋 </h1>                       <p>Login  to  continue  your  financial  journey  and  track  your  portfolio.</p>                   </div>               </div>           </div>       </div>       <script>       const  container  =  document.getElementById('container');   
+
+--- PAGE 19 ---
+ 
+    document.getElementById('toLogin').onclick  =  ()  =>  {           container.classList.remove('right-panel-active');       };       document.getElementById('toSignup').onclick  =  ()  =>  {           container.classList.add('right-panel-active');       };       </script>       </body>       </html>  
+
+--- PAGE 20 ---
+ 
+ auth.css  @import  
+url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;600;700&f
+amily=DM+Sans:wght@300;400;500&display=swap');
+      *,  *::before,  *::after  {           box-sizing:  border-box;           margin:  0;           padding:  0;       }       :root  {           --gold:         #C9A84C;       
+
+--- PAGE 21 ---
+ 
+    --gold-light:   #E5C97A;           --gold-dim:     rgba(201,  168,  76,  0.15);           --dark:         #0A0D12;           --dark-2:       #111520;           --dark-3:       #1A2035;           --text:         #EAE6DF;           --muted:        #8A8F9E;           --border:       rgba(201,  168,  76,  0.18);           --input-bg:     rgba(255,  255,  255,  0.04);      
+
+--- PAGE 22 ---
+ 
+     --input-border:rgba(255,  255,  255,  0.1);       }       /*  ──  BASE  ──  */       html,  body  {           height:  100%;           font-family:  'DM  Sans',  sans-serif;           font-weight:  400;           background:  var(--dark);           color:  var(--text);    
+
+--- PAGE 23 ---
+ 
+       overflow:  hidden;       }       body::before  {           content:  '';           position:  fixed;  inset:  0;           background:               radial-gradient(ellipse  70%  60%  at  15%  50%,  rgba(30,50,120,0.2)  0%,  transparent  60%),               radial-gradient(ellipse  60%  60%  at  85%  50%,  rgba(201,168,76,0.06)  0%,  transparent  
+60%);
+          pointer-events:  none;  z-index:  0;  
+
+--- PAGE 24 ---
+ 
+     }       /*  ──  NAV  ──  */       nav  {           position:  fixed;           top:  0;  left:  0;  right:  0;           z-index:  999;           height:  64px;           display:  flex;       
+
+--- PAGE 25 ---
+ 
+    align-items:  center;           padding:  0  2.5rem;           border-bottom:  1px  solid  var(--border);           background:  rgba(10,13,18,0.85);           backdrop-filter:  blur(16px);           -webkit-backdrop-filter:  blur(16px);       }       .logo  {           font-family:  'Cormorant  Garamond',  serif;      
+
+--- PAGE 26 ---
+ 
+     font-size:  1.75rem;           font-weight:  700;           letter-spacing:  0.04em;           color:  var(--gold);           text-decoration:  none;       }       .logo  span  {  color:  var(--text);  opacity:  0.85;  }       /*  ──  PAGE  LAYOUT  ──  */       body  {    
+
+--- PAGE 27 ---
+ 
+       display:  flex;           justify-content:  center;           align-items:  center;       }       /*  ──  MAIN  CONTAINER  ──  */       .container  {           position:  relative;           z-index:  1;           background:  var(--dark-2);   
+
+--- PAGE 28 ---
+ 
+        border:  1px  solid  var(--border);           border-radius:  20px;           overflow:  hidden;           width:  920px;           max-width:  calc(100vw  -  2rem);           min-height:  580px;           margin-top:  64px;           box-shadow:               0  40px  80px  rgba(0,0,0,0.5),  
+
+--- PAGE 29 ---
+ 
+             inset  0  1px  0  rgba(255,255,255,0.04);       }       /*  ──  FORM  CONTAINERS  ──  */       .form-container  {           position:  absolute;           top:  0;           height:  100%;           width:  50%;       
+
+--- PAGE 30 ---
+ 
+    transition:  all  0.65s  cubic-bezier(0.77,  0,  0.175,  1);           display:  flex;           align-items:  center;       }       .sign-in  {           left:  0;           z-index:  2;       }       .sign-up  {      
+
+--- PAGE 31 ---
+ 
+     left:  0;           opacity:  0;           z-index:  1;           pointer-events:  none;       }       .container.right-panel-active  .sign-in  {           transform:  translateX(100%);           opacity:  0;       }    
+
+--- PAGE 32 ---
+ 
+   .container.right-panel-active  .sign-up  {           transform:  translateX(100%);           opacity:  1;           z-index:  5;           pointer-events:  all;       }       /*  ──  FORM  STYLING  ──  */       form  {           width:  100%;   
+
+--- PAGE 33 ---
+ 
+        display:  flex;           flex-direction:  column;           gap:  0.85rem;           padding:  2.75rem  2.75rem;       }       .form-header  {           margin-bottom:  0.5rem;       }       .form-header  h1  {  
+
+--- PAGE 34 ---
+ 
+         font-family:  'Cormorant  Garamond',  serif;           font-size:  2rem;           font-weight:  600;           letter-spacing:  -0.01em;           color:  var(--text);           margin-bottom:  0.3rem;       }       .form-header  p  {       
+
+--- PAGE 35 ---
+ 
+    font-size:  0.82rem;           color:  var(--muted);           font-weight:  300;       }       /*  ──  INPUT  GROUP  ──  */       .input-group  {           position:  relative;           display:  flex;           align-items:  center;      
+
+--- PAGE 36 ---
+ 
+ }       .input-icon  {           position:  absolute;           left:  0.9rem;           color:  var(--muted);           pointer-events:  none;           transition:  color  0.25s;           flex-shrink:  0;           z-index:  1;    
+
+--- PAGE 37 ---
+ 
+   }       .input-group:focus-within  .input-icon  {           color:  var(--gold);       }       input,       select  {           width:  100%;           background:  var(--input-bg);           border:  1px  solid  var(--input-border);   
+
+--- PAGE 38 ---
+ 
+        border-radius:  10px;           color:  var(--text);           font-family:  'DM  Sans',  sans-serif;           font-size:  0.875rem;           font-weight:  400;           padding:  0.78rem  1rem  0.78rem  2.6rem;           outline:  none;           transition:  border-color  0.25s,  box-shadow  0.25s,  background  0.25s;           -webkit-appearance:  none;  
+
+--- PAGE 39 ---
+ 
+         appearance:  none;       }       input::placeholder  {           color:  rgba(138,  143,  158,  0.55);       }       input:focus,       select:focus  {           border-color:  var(--gold);       
+
+--- PAGE 40 ---
+ 
+    background:  rgba(201,  168,  76,  0.05);           box-shadow:  0  0  0  3px  rgba(201,  168,  76,  0.12);       }       input:hover,       select:hover  {           border-color:  rgba(201,  168,  76,  0.35);       }       /*  ──  SELECT  DROPDOWN  ──  */       .select-group  {      
+
+--- PAGE 41 ---
+ 
+     position:  relative;       }       .select-group  select  {           cursor:  pointer;           padding-right:  2.5rem;       }       .select-group  select  option  {           background:  var(--dark-2);           color:  var(--text);    
+
+--- PAGE 42 ---
+ 
+   }       .select-arrow  {           position:  absolute;           right:  0.9rem;           color:  var(--muted);           pointer-events:  none;           transition:  color  0.25s;       }       .select-group:focus-within  .select-arrow  {   
+
+--- PAGE 43 ---
+ 
+        color:  var(--gold);       }       /*  ──  FORGOT  PASSWORD  ──  */       .forgot  {           font-size:  0.75rem;           color:  var(--muted);           text-decoration:  none;           text-align:  right;           margin-top:  -0.25rem;  
+
+--- PAGE 44 ---
+ 
+         transition:  color  0.2s;           letter-spacing:  0.02em;       }       .forgot:hover  {  color:  var(--gold);  }       /*  ──  MAIN  BUTTON  ──  */       .btn-main  {           display:  flex;           align-items:  center;       
+
+--- PAGE 45 ---
+ 
+    justify-content:  center;           gap:  0.6rem;           width:  100%;           padding:  0.85rem  1.5rem;           margin-top:  0.25rem;           background:  var(--gold);           border:  1px  solid  var(--gold);           border-radius:  10px;           font-family:  'DM  Sans',  sans-serif;      
+
+--- PAGE 46 ---
+ 
+     font-size:  0.9rem;           font-weight:  600;           letter-spacing:  0.06em;           text-transform:  uppercase;           color:  var(--dark);           cursor:  pointer;           position:  relative;           overflow:  hidden;           transition:  all  0.3s  cubic-bezier(0.22,  1,  0.36,  1);    
+
+--- PAGE 47 ---
+ 
+   }       .btn-main::before  {           content:  '';           position:  absolute;           inset:  0;           background:  linear-gradient(135deg,  rgba(255,255,255,0.2)  0%,  transparent  60%);           opacity:  0;           transition:  opacity  0.3s;       }   
+
+--- PAGE 48 ---
+ 
+    .btn-main::after  {           content:  '';           position:  absolute;           bottom:  -2px;  left:  50%;           transform:  translateX(-50%);           width:  0;  height:  2px;           background:  var(--dark);           border-radius:  2px;           transition:  width  0.3s  ease;  
+
+--- PAGE 49 ---
+ 
+     }       .btn-main:hover  {           background:  var(--gold-light);           border-color:  var(--gold-light);           color:  var(--dark);           transform:  translateY(-2px);           box-shadow:               0  8px  25px  rgba(201,  168,  76,  0.45),       
+
+--- PAGE 50 ---
+ 
+        0  2px  8px  rgba(201,  168,  76,  0.3);       }       .btn-main:hover::before  {  opacity:  1;  }       .btn-main:hover::after  {  width:  40%;  }       .btn-main:active  {           transform:  translateY(0px);           box-shadow:  0  4px  12px  rgba(201,  168,  76,  0.3);       }       .btn-main  svg  {      
+
+--- PAGE 51 ---
+ 
+     transition:  transform  0.3s  ease;           flex-shrink:  0;       }       .btn-main:hover  svg  {  transform:  translateX(4px);  }       /*  ──  SWITCH  TEXT  ──  */       .switch-text  {           font-size:  0.78rem;           color:  var(--muted);           text-align:  center;    
+
+--- PAGE 52 ---
+ 
+       font-weight:  300;       }       .switch  {           color:  var(--gold);           font-weight:  500;           cursor:  pointer;           border-bottom:  1px  solid  transparent;           transition:  border-color  0.2s;           padding-bottom:  1px;   
+
+--- PAGE 53 ---
+ 
+    }       .switch:hover  {  border-color:  var(--gold);  }       /*  ──  OVERLAY  CONTAINER  ──  */       .overlay-container  {           position:  absolute;           top:  0;           left:  50%;           width:  50%;           height:  100%;  
+
+--- PAGE 54 ---
+ 
+         overflow:  hidden;           transition:  transform  0.65s  cubic-bezier(0.77,  0,  0.175,  1);           z-index:  10;           border-radius:  0  20px  20px  0;       }       .container.right-panel-active  .overlay-container  {           transform:  translateX(-100%);           border-radius:  20px  0  0  20px;       
+
+--- PAGE 55 ---
+ 
+}       /*  ──  OVERLAY  ──  */       .overlay  {           background:  linear-gradient(145deg,  #1a2035  0%,  #0f1520  50%,  #0A0D12  100%);           position:  relative;           left:  -100%;           width:  200%;           height:  100%;           transform:  translateX(0);      
+
+--- PAGE 56 ---
+ 
+     transition:  transform  0.65s  cubic-bezier(0.77,  0,  0.175,  1);       }       /*  Gold  shimmer  line  at  top  of  overlay  */       .overlay::before  {           content:  '';           position:  absolute;           top:  0;  left:  0;  right:  0;           height:  2px;           background:  linear-gradient(90deg,  transparent,  var(--gold),  transparent);    
+
+--- PAGE 57 ---
+ 
+       opacity:  0.6;       }       /*  Subtle  radial  glow  inside  overlay  */       .overlay::after  {           content:  '';           position:  absolute;  inset:  0;           background:  radial-gradient(ellipse  80%  60%  at  50%  40%,  rgba(201,168,76,0.07)  0%,  
+transparent
+ 
+70%);
+          pointer-events:  none;       }  
+
+--- PAGE 58 ---
+ 
+     .container.right-panel-active  .overlay  {           transform:  translateX(50%);       }       /*  ──  OVERLAY  PANELS  ──  */       .overlay-panel  {           position:  absolute;           display:  flex;           flex-direction:  column;       
+
+--- PAGE 59 ---
+ 
+    justify-content:  center;           align-items:  center;           padding:  0  3rem;           text-align:  center;           height:  100%;           width:  50%;           gap:  1rem;           transition:  transform  0.65s  cubic-bezier(0.77,  0,  0.175,  1);       }      
+
+--- PAGE 60 ---
+ 
+ .overlay-left  {           left:  0;           transform:  translateX(-20%);           opacity:  0;           transition:  transform  0.65s  cubic-bezier(0.77,  0,  0.175,  1),  opacity  0.4s  ease;       }       .container.right-panel-active  .overlay-left  {           transform:  translateX(0);           opacity:  1;    
+
+--- PAGE 61 ---
+ 
+   }       .overlay-right  {           right:  0;           transform:  translateX(0);           opacity:  1;           transition:  transform  0.65s  cubic-bezier(0.77,  0,  0.175,  1),  opacity  0.4s  ease;       }       .container.right-panel-active  .overlay-right  {           transform:  translateX(20%);   
+
+--- PAGE 62 ---
+ 
+        opacity:  0;       }       /*  ──  OVERLAY  LOGO  ──  */       .overlay-logo  {           font-family:  'Cormorant  Garamond',  serif;           font-size:  2rem;           font-weight:  700;           letter-spacing:  0.04em;           color:  var(--gold);  
+
+--- PAGE 63 ---
+ 
+         margin-bottom:  0.5rem;       }       .overlay-logo  span  {           color:  var(--text);           opacity:  0.85;       }       /*  ──  OVERLAY  TEXT  ──  */       .overlay-panel  h1  {       
+
+--- PAGE 64 ---
+ 
+    font-family:  'Cormorant  Garamond',  serif;           font-size:  1.75rem;           font-weight:  600;           color:  var(--text);           line-height:  1.2;           letter-spacing:  -0.01em;       }       .overlay-panel  p  {           font-size:  0.85rem;      
+
+--- PAGE 65 ---
+ 
+     font-weight:  300;           color:  var(--muted);           line-height:  1.65;           max-width:  220px;       }       /*  ──  GOLD  DIVIDER  UNDER  OVERLAY  LOGO  ──  */       .overlay-panel::after  {           content:  '';           display:  block;    
+
+--- PAGE 66 ---
+ 
+       order:  1;           width:  36px;           height:  1px;           background:  var(--gold);           opacity:  0.5;           margin:  -0.25rem  0  0.25rem;       }       /*  ──  RESPONSIVE  ──  */       @media  (max-width:  700px)  {   
+
+--- PAGE 67 ---
+ 
+        .container  {               min-height:  unset;               width:  100%;               border-radius:  0;               margin-top:  64px;               height:  calc(100vh  -  64px);               overflow-y:  auto;           }           .overlay-container  {  display:  none;  }  
+
+--- PAGE 68 ---
+ 
+         .form-container  {               width:  100%;               position:  relative;               top:  unset;           }           .sign-in,           .sign-up  {               position:  relative;       
+
+--- PAGE 69 ---
+ 
+        display:  none;           }           .sign-in  {  display:  flex;  }           .container.right-panel-active  .sign-in  {  display:  none;  transform:  none;  }           .container.right-panel-active  .sign-up  {  display:  flex;  transform:  none;  position:  relative;  }           form  {  padding:  2rem  1.5rem;  }       }     

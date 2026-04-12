@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Finvest - Grow Your Wealth</title>
+  <link href="{{ url_for('static', filename='css/onboarding.css') }}" rel="stylesheet"/>
+</head>
+<body>
+  <nav>
+    <div class="logo">Fin<span>vest</span></div>
+    <div class="nav-actions">
+      <a href="{{ url_for('auth.auth_page') }}" class="btn btn-primary">Get Started</a>
+    </div>
+  </nav>
+
+  <section class="hero">
+    <div class="hero-left">
+      <div class="eyebrow">Wealth Intelligence Platform</div>
+      <h1>
+        Manage &amp; <em>grow</em><br>
+        your wealth<br>
+        smarter.
+      </h1>
+
+      <p class="hero-desc">
+        A finance application that helps individuals manage and grow their wealth through an interactive
+        dashboard - giving you clarity, control, and confidence over your financial future.
+      </p>
+
+      <div class="hero-cta">
+        <a href="{{ url_for('auth.auth_page') }}" class="btn btn-primary btn-lg">
+          Get Started Free
+        </a>
+        <span class="hero-note">
+          <svg width="14" height="14" fill="none" stroke="#8A8F9E" stroke-width="1.5" viewBox="0 0 24 24">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          </svg>
+          Bank-grade security
+        </span>
+      </div>
+    </div>
+
+    <div class="hero-right">
+      <div class="dashboard-card">
+        <div class="card-header">
+          <span class="card-title">Portfolio Overview</span>
+          <span class="badge">● Live</span>
+        </div>
+
+        <div class="portfolio-value">$248,391.50</div>
+        <div class="portfolio-change">
+          <svg width="12" height="12" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M7 14l5-5 5 5"/>
+          </svg>
+          +$4,210.20 (+1.73%) today
+        </div>
+
+        <div class="mini-chart">
+          <svg viewBox="0 0 400 80" preserveAspectRatio="none">
+            <defs>
+              <linearGradient id="cg" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#C9A84C" stop-opacity="0.3"/>
+                <stop offset="100%" stop-color="#C9A84C" stop-opacity="0"/>
+              </linearGradient>
+            </defs>
+            <path d="M0,60 C40,55 60,45 100,40 C140,35 150,50 190,30 C230,10 260,25 300,20 C340,15 370,18 400,10 L400,80 L0,80 Z" fill="url(#cg)"/>
+            <path d="M0,60 C40,55 60,45 100,40 C140,35 150,50 190,30 C230,10 260,25 300,20 C340,15 370,18 400,10" fill="none" stroke="#C9A84C" stroke-width="2"/>
+          </svg>
+        </div>
+
+        <div class="assets">
+          <div class="asset-row">
+            <div class="asset-icon" style="background: rgba(94,203,140,0.12); color: #5ECB8C;">S</div>
+            <div class="asset-info">
+              <div class="asset-name">S&amp;P 500 ETF</div>
+              <div class="asset-ticker">SPY</div>
+            </div>
+            <div class="asset-bar-wrap">
+              <div class="asset-bar-bg"><div class="asset-bar-fill" style="width: 72%"></div></div>
+            </div>
+            <div class="asset-val">
+              <div>$89,300</div>
+              <div class="asset-pct" style="color: #5ECB8C">+2.1%</div>
+            </div>
+          </div>
+
+          <div class="asset-row">
+            <div class="asset-icon" style="background: rgba(201,168,76,0.12); color: #C9A84C;">A</div>
+            <div class="asset-info">
+              <div class="asset-name">Apple Inc.</div>
+              <div class="asset-ticker">AAPL</div>
+            </div>
+            <div class="asset-bar-wrap">
+              <div class="asset-bar-bg"><div class="asset-bar-fill" style="width: 48%"></div></div>
+            </div>
+            <div class="asset-val">
+              <div>$52,140</div>
+              <div class="asset-pct" style="color: #5ECB8C">+0.8%</div>
+            </div>
+          </div>
+
+          <div class="asset-row">
+            <div class="asset-icon" style="background: rgba(100,120,240,0.12); color: #8090f0;">B</div>
+            <div class="asset-info">
+              <div class="asset-name">BTC / USD</div>
+              <div class="asset-ticker">Bitcoin</div>
+            </div>
+            <div class="asset-bar-wrap">
+              <div class="asset-bar-bg"><div class="asset-bar-fill" style="width: 35%"></div></div>
+            </div>
+            <div class="asset-val">
+              <div>$38,900</div>
+              <div class="asset-pct" style="color: #e07070">-1.3%</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="float-card">
+        <div class="float-label">Monthly Return</div>
+        <div class="float-val">+$9,841</div>
+      </div>
+    </div>
+  </section>
+
+  <div class="stats-bar">
+    <div class="stat"><span class="stat-num">$2.4B+</span><span class="stat-label">Assets tracked</span></div>
+    <div class="stat"><span class="stat-num">180K+</span><span class="stat-label">Active investors</span></div>
+    <div class="stat"><span class="stat-num">99.9%</span><span class="stat-label">Uptime SLA</span></div>
+    <div class="stat"><span class="stat-num">4.9 ★</span><span class="stat-label">App store rating</span></div>
+  </div>
+</body>
+</html>
