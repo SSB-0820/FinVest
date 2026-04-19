@@ -82,3 +82,15 @@ CREATE TABLE IF NOT EXISTS activity_logs (
     details VARCHAR(255),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE TABLE IF NOT EXISTS notifications (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    title VARCHAR(120) NOT NULL,
+    message VARCHAR(255) NOT NULL,
+    notification_type VARCHAR(50) NOT NULL,
+    reference_key VARCHAR(120),
+    is_read BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);

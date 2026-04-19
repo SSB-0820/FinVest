@@ -1,7 +1,10 @@
+from datetime import datetime
+
 from flask import session
 
 from app.models.activity_log_model import ActivityLog
 from extensions.db import db
+from extensions.mongo import insert_document
 
 
 def log_activity(action, details="", user_id=None, user_name=None, user_email=None):
@@ -17,4 +20,15 @@ def log_activity(action, details="", user_id=None, user_name=None, user_email=No
             action=action,
             details=details,
         )
+    )
+    insert_document(
+        "activity_logs",
+        {
+            "user_id": resolved_user_id,
+            "user_name": resolved_user_name,
+            "user_email": resolved_user_email,
+            "action": action,
+            "details": details,
+            "created_at": datetime.utcnow().isoformat(),
+        },
     )

@@ -5,6 +5,21 @@
 {% block page_subtitle %}Your finance summary, recent activity, and spending view for this month.{% endblock %}
 
 {% block content %}
+{% if show_guide %}
+<section class="panel guide-panel">
+    <div class="panel-header">
+        <span>Quick Guide</span>
+        <form method="POST" action="{{ url_for('dashboard.dismiss_guide') }}">
+            <button type="submit" class="btn-link-danger">Skip</button>
+        </form>
+    </div>
+    <div class="guide-grid">
+        <div class="guide-card">1. Add income and expense transactions to update your balance.</div>
+        <div class="guide-card">2. Create budgets and track overspending alerts.</div>
+        <div class="guide-card">3. Use goals, reports, and notifications to review progress.</div>
+    </div>
+</section>
+{% endif %}
 <section class="stats-grid">
     <div class="card stat-card">
         <div class="card-title">Total Balance</div>
@@ -20,6 +35,11 @@
         <div class="card-title">Monthly Expense</div>
         <div class="card-value warn">{{ currency_symbol }} {{ '%.2f'|format(monthly_expense) }}</div>
         <div class="helper-text">Expenses added this month</div>
+    </div>
+    <div class="card stat-card">
+        <div class="card-title">Average Monthly Spending</div>
+        <div class="card-value">{{ currency_symbol }} {{ '%.2f'|format(average_monthly_expense) }}</div>
+        <div class="helper-text">Based on your recent spending months</div>
     </div>
 </section>
 
@@ -58,7 +78,12 @@
             </div>
             <div class="chart-layout">
                 <div class="pie-wrap">
-                    <div class="pie-chart" style="{{ pie_chart_style }}"></div>
+                    <div class="pie-chart" style="{{ pie_chart_style }}">
+                        <div class="pie-chart-hole">
+                            <strong>{{ top_spending_category or 'No Data' }}</strong>
+                            <span>Top category</span>
+                        </div>
+                    </div>
                 </div>
                 <div class="legend-list">
                     {% if chart_legend %}
@@ -67,7 +92,7 @@
                                 <span class="legend-dot" style="background: {{ item.color }}"></span>
                                 <div class="legend-text">
                                     <strong>{{ item.name }}</strong>
-                                    <small>{{ currency_symbol }} {{ '%.2f'|format(item.amount) }} • {{ item.percent }}%</small>
+                                    <small>{{ currency_symbol }} {{ '%.2f'|format(item.amount) }} | {{ item.percent }}%</small>
                                 </div>
                             </div>
                         {% endfor %}
@@ -120,7 +145,7 @@
                     <div class="tx">
                         <div>
                             <strong>{{ item.category.name }}</strong>
-                            <div class="helper-text">{{ item.date.strftime('%d %b %Y') }}{% if item.description %} • {{ item.description }}{% endif %}</div>
+                            <div class="helper-text">{{ item.date.strftime('%d %b %Y') }}{% if item.description %} | {{ item.description }}{% endif %}</div>
                         </div>
                         <span class="{% if item.type == 'income' %}up{% else %}warn{% endif %}">
                             {% if item.type == 'income' %}+{% else %}-{% endif %}{{ currency_symbol }} {{ '%.2f'|format(item.amount) }}

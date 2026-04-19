@@ -11,17 +11,17 @@
     <aside class="sidebar">
         <div class="logo">Fin<span>vest</span></div>
         <nav class="nav">
-            <a href="{{ url_for('dashboard.home') }}" class="nav-item {% if active_page == 'dashboard' %}active{% endif %}">Dashboard</a>
-            <a href="{{ url_for('transactions.transaction_list') }}" class="nav-item {% if active_page == 'transactions' %}active{% endif %}">Transactions</a>
-            <a href="{{ url_for('categories.category_list') }}" class="nav-item {% if active_page == 'categories' %}active{% endif %}">Categories</a>
-            <a href="{{ url_for('budgets.budget_list') }}" class="nav-item {% if active_page == 'budgets' %}active{% endif %}">Budgets</a>
-            <a href="{{ url_for('goals.goal_list') }}" class="nav-item {% if active_page == 'goals' %}active{% endif %}">Goals</a>
-            <a href="{{ url_for('dashboard.account') }}" class="nav-item {% if active_page == 'account' %}active{% endif %}">Account</a>
             {% if session.get('role') == 'admin' and session.get('email') == 'admin@gmail.com' %}
                 <a href="{{ url_for('dashboard.admin_dashboard') }}" class="nav-item {% if active_page == 'admin' %}active{% endif %}">Admin</a>
+            {% else %}
+                <a href="{{ url_for('dashboard.home') }}" class="nav-item {% if active_page == 'dashboard' %}active{% endif %}">Dashboard</a>
+                <a href="{{ url_for('transactions.transaction_list') }}" class="nav-item {% if active_page == 'transactions' %}active{% endif %}">Transactions</a>
+                <a href="{{ url_for('categories.category_list') }}" class="nav-item {% if active_page == 'categories' %}active{% endif %}">Categories</a>
+                <a href="{{ url_for('budgets.budget_list') }}" class="nav-item {% if active_page == 'budgets' %}active{% endif %}">Budgets</a>
+                <a href="{{ url_for('goals.goal_list') }}" class="nav-item {% if active_page == 'goals' %}active{% endif %}">Goals</a>
+                <a href="{{ url_for('reports.report_list') }}" class="nav-item {% if active_page == 'reports' %}active{% endif %}">Reports</a>
             {% endif %}
         </nav>
-        <a href="{{ url_for('auth.logout') }}" class="logout">Logout</a>
     </aside>
 
     <div class="main">
@@ -31,13 +31,25 @@
                 <p class="page-subtitle">{% block page_subtitle %}{% endblock %}</p>
             </div>
             <div class="header-right">
-                <a href="{{ url_for('dashboard.account') }}" class="profile-chip">
-                    <div class="avatar">{{ session.get('username', 'U')[:1] }}</div>
-                    <div class="profile-meta">
-                        <strong>{{ session.get('username', 'User') }}</strong>
-                        <span>Profile</span>
-                    </div>
+                <a href="{{ url_for('notifications.notification_list') }}" class="icon-button" aria-label="Notifications">
+                    <span class="bell-icon">&#128276;</span>
+                    {% if unread_notification_count %}
+                        <span class="icon-badge">{{ unread_notification_count }}</span>
+                    {% endif %}
                 </a>
+                <details class="profile-menu">
+                    <summary class="profile-chip">
+                        <div class="avatar">{{ session.get('username', 'U')[:1] }}</div>
+                        <div class="profile-meta">
+                            <strong>{{ session.get('username', 'User') }}</strong>
+                            <span>Profile</span>
+                        </div>
+                    </summary>
+                    <div class="profile-dropdown">
+                        <a href="{{ url_for('dashboard.account') }}" class="profile-dropdown-link">Account Settings</a>
+                        <a href="{{ url_for('auth.logout') }}" class="profile-dropdown-link danger-link">Logout</a>
+                    </div>
+                </details>
             </div>
         </header>
 

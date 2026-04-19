@@ -9,7 +9,7 @@
     <div class="content-main">
         <div class="card form-card">
             <div class="panel-header"><span>Filter Transactions</span></div>
-            <form method="GET" action="{{ url_for('transactions.transaction_list') }}" class="form-grid four-col">
+            <form method="GET" action="{{ url_for('transactions.transaction_list') }}" class="form-grid six-col">
                 <label>
                     <span>Type</span>
                     <select name="type">
@@ -34,6 +34,14 @@
                 <label>
                     <span>End Date</span>
                     <input type="date" name="end_date" value="{{ filters.end_date }}">
+                </label>
+                <label>
+                    <span>Min Amount</span>
+                    <input type="number" name="min_amount" min="0" step="0.01" value="{{ filters.min_amount }}">
+                </label>
+                <label>
+                    <span>Max Amount</span>
+                    <input type="number" name="max_amount" min="0" step="0.01" value="{{ filters.max_amount }}">
                 </label>
                 <button type="submit" class="btn-primary-action">Apply Filters</button>
             </form>
@@ -114,6 +122,7 @@
                         <option value="income">Income</option>
                     </select>
                 </label>
+                <p class="helper-text no-margin">Income increases balance. Expense decreases balance automatically.</p>
                 <label>
                     <span>Account</span>
                     <select name="account_id" required>

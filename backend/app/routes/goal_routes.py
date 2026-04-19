@@ -38,7 +38,7 @@ def goal_list():
         )
 
     return render_template(
-        "dashboard/goals_clean.html",
+        "dashboard/goals.html",
         active_page="goals",
         goals=goal_rows,
         settings=settings,

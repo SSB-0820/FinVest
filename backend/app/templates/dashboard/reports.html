@@ -1,0 +1,126 @@
+{% extends "dashboard/layout.html" %}
+
+{% block title %}Reports | FinVest{% endblock %}
+{% block page_title %}Reports and Analytics{% endblock %}
+{% block page_subtitle %}View spending patterns, compare income vs expense, and export your data when needed.{% endblock %}
+
+{% block content %}
+<section class="stats-grid admin-stats">
+    <div class="card stat-card">
+        <div class="card-title">Total Income</div>
+        <div class="card-value up">{{ settings.currency }} {{ '%.2f'|format(total_income) }}</div>
+    </div>
+    <div class="card stat-card">
+        <div class="card-title">Total Expense</div>
+        <div class="card-value warn">{{ settings.currency }} {{ '%.2f'|format(total_expense) }}</div>
+    </div>
+    <div class="card stat-card">
+        <div class="card-title">Net</div>
+        <div class="card-value">{{ settings.currency }} {{ '%.2f'|format(net) }}</div>
+    </div>
+</section>
+
+<section class="content-grid">
+    <div class="content-main">
+        <div class="panel">
+            <div class="panel-header"><span>Filter Reports</span></div>
+            <form method="GET" action="{{ url_for('reports.report_list') }}" class="form-grid four-col">
+                <label>
+                    <span>Start Date</span>
+                    <input type="date" name="start_date" value="{{ filters.start_date }}">
+                </label>
+                <label>
+                    <span>End Date</span>
+                    <input type="date" name="end_date" value="{{ filters.end_date }}">
+                </label>
+                <label>
+                    <span>Category</span>
+                    <select name="category_id">
+                        <option value="">All</option>
+                        {% for item in categories %}
+                            <option value="{{ item.id }}" {% if filters.category_id == item.id|string %}selected{% endif %}>{{ item.name }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+                <label>
+                    <span>Type</span>
+                    <select name="type">
+                        <option value="">All</option>
+                        <option value="income" {% if filters.type == 'income' %}selected{% endif %}>Income</option>
+                        <option value="expense" {% if filters.type == 'expense' %}selected{% endif %}>Expense</option>
+                    </select>
+                </label>
+                <button type="submit" class="btn-primary-action">Load Report</button>
+            </form>
+        </div>
+
+        <div class="panel">
+            <div class="panel-header"><span>Category Analysis</span></div>
+            {% if category_rows %}
+                <div class="budget-list">
+                    {% for name, amount in category_rows %}
+                        <div class="budget-card-row">
+                            <div class="budget-card-header">
+                                <strong>{{ name }}</strong>
+                                <span>{{ settings.currency }} {{ '%.2f'|format(amount) }}</span>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p class="empty-text">No category data available for the selected filter.</p>
+            {% endif %}
+        </div>
+
+        <div class="panel">
+            <div class="panel-header"><span>Monthly Summary</span></div>
+            {% if monthly_rows %}
+                <div class="compare-list">
+                    {% for item in monthly_rows %}
+                        <div class="compare-row">
+                            <div class="compare-label">{{ item.label }}</div>
+                            <div class="compare-values">
+                                <span class="up">Income: {{ settings.currency }} {{ '%.2f'|format(item.income) }}</span>
+                                <span class="warn">Expense: {{ settings.currency }} {{ '%.2f'|format(item.expense) }}</span>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p class="empty-text">No monthly summary available yet.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="content-side">
+        <div class="panel">
+            <div class="panel-header"><span>Export and Backup</span></div>
+            <div class="stack-form">
+                <a href="{{ url_for('reports.export_transactions_csv') }}" class="btn-primary-action export-link">Export Transactions CSV</a>
+                <a href="{{ url_for('reports.backup_user_data') }}" class="btn-secondary-action export-link">Download Backup JSON</a>
+            </div>
+        </div>
+
+        <div class="panel">
+            <div class="panel-header"><span>Mongo Report Snapshots</span></div>
+            {% if report_snapshots %}
+                <div class="activity-list">
+                    {% for item in report_snapshots %}
+                        <div class="activity-row">
+                            <div class="activity-header">
+                                <strong>{{ item.created_on }}</strong>
+                                <span class="helper-text">{{ item.transaction_count }} entries</span>
+                            </div>
+                            <div class="activity-body">
+                                <p class="helper-text no-margin">Income {{ item.total_income }} | Expense {{ item.total_expense }} | Net {{ item.net }}</p>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p class="empty-text">No Mongo report snapshots yet. Open this page after MongoDB is running.</p>
+            {% endif %}
+        </div>
+    </div>
+</section>
+{% endblock %}

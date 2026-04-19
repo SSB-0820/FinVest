@@ -1,0 +1,46 @@
+{% extends "dashboard/layout.html" %}
+
+{% block title %}Notifications | FinVest{% endblock %}
+{% block page_title %}Notifications{% endblock %}
+{% block page_subtitle %}Track budget alerts, goal reminders, and important account messages.{% endblock %}
+
+{% block content %}
+<section class="content-grid single-page">
+    <div class="content-main">
+        <div class="panel">
+            <div class="panel-header">
+                <span>All Notifications</span>
+                <form method="POST" action="{{ url_for('notifications.mark_all_notifications_read') }}">
+                    <button type="submit" class="btn-primary-action small">Mark All Read</button>
+                </form>
+            </div>
+
+            {% if notifications %}
+                <div class="activity-list">
+                    {% for item in notifications %}
+                        <div class="activity-row {% if not item.is_read %}unread-card{% endif %}">
+                            <div class="activity-header">
+                                <strong>{{ item.title }}</strong>
+                                <span class="helper-text">{{ item.created_at.strftime('%d %b %Y %I:%M %p') if item.created_at else '-' }}</span>
+                            </div>
+                            <div class="activity-body">
+                                <p class="helper-text no-margin">{{ item.message }}</p>
+                                <div class="row-actions">
+                                    <span class="type-chip">{{ item.notification_type }}</span>
+                                    {% if not item.is_read %}
+                                        <form method="POST" action="{{ url_for('notifications.mark_notification_read', notification_id=item.id) }}">
+                                            <button type="submit" class="btn-secondary-action">Mark Read</button>
+                                        </form>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p class="empty-text">No notifications available right now.</p>
+            {% endif %}
+        </div>
+    </div>
+</section>
+{% endblock %}

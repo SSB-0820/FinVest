@@ -15,6 +15,7 @@ from app.models.user_settings_model import get_or_create_user_settings
 from app.utils.activity_logger import log_activity
 from app.utils.decorators import admin_required, login_required
 from extensions.db import db
+from extensions.mongo import get_collection
 
 dashboard = Blueprint("dashboard", __name__)
 
@@ -185,7 +186,8 @@ def _build_dashboard_data(user_id):
 @login_required
 def home():
     data = _build_dashboard_data(session["user_id"])
-    return render_template("dashboard/home_clean.html", active_page="dashboard", **data)
+    data["show_guide"] = not session.get("guide_dismissed", False)
+    return render_template("dashboard/home.html", active_page="dashboard", **data)
 
 
 @dashboard.route("/account")
@@ -296,9 +298,42 @@ def admin_dashboard():
 
     system_transactions = transaction_query.limit(20).all()
     activity_logs = activity_query.limit(25).all()
+    activity_collection = get_collection("activity_logs")
+    if activity_collection is not None:
+        mongo_filter = {}
+        if selected_user_id:
+            mongo_filter["user_id"] = int(selected_user_id)
+        mongo_logs = list(activity_collection.find(mongo_filter).sort("_id", -1).limit(25))
+        if mongo_logs:
+            activity_logs = mongo_logs
+
+    activity_rows = []
+    for item in activity_logs:
+        created_at = getattr(item, "created_at", None)
+        if isinstance(item, dict):
+            created_at = item.get("created_at")
+            created_label = str(created_at or "-")
+            activity_rows.append(
+                {
+                    "user_name": item.get("user_name", "Unknown User"),
+                    "action": item.get("action", "activity"),
+                    "details": item.get("details", ""),
+                    "created_at_label": created_label,
+                }
+            )
+        else:
+            created_label = created_at.strftime("%d %b %Y %I:%M %p") if created_at else "-"
+            activity_rows.append(
+                {
+                    "user_name": item.user_name,
+                    "action": item.action,
+                    "details": item.details,
+                    "created_at_label": created_label,
+                }
+            )
 
     return render_template(
-        "dashboard/admin_clean.html",
+        "dashboard/admin.html",
         active_page="admin",
         total_users=total_users,
         total_admins=total_admins,
@@ -309,7 +344,7 @@ def admin_dashboard():
         total_goals=total_goals,
         users=users,
         user_lookup={user.id: user for user in users},
-        activity_logs=activity_logs,
+        activity_logs=activity_rows,
         system_transactions=system_transactions,
         selected_user_id=selected_user_id,
     )
@@ -359,3 +394,11 @@ def delete_user(user_id):
     db.session.commit()
     flash("User deleted successfully")
     return redirect(url_for("dashboard.admin_dashboard"))
+
+
+@dashboard.route("/guide/dismiss", methods=["POST"])
+@login_required
+def dismiss_guide():
+    session["guide_dismissed"] = True
+    flash("Guide hidden. You can still use the modules from the sidebar.")
+    return redirect(url_for("dashboard.home"))

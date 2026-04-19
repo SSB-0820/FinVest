@@ -64,7 +64,7 @@ def transaction_list():
 
     items = query.order_by(Transaction.date.desc(), Transaction.id.desc()).all()
     return render_template(
-        "dashboard/transactions_clean.html",
+        "dashboard/transactions.html",
         active_page="transactions",
         transactions=items,
         accounts=accounts,
