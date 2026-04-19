@@ -1,6 +1,7 @@
 from flask import Blueprint, flash, redirect, render_template, request, session, url_for
 
 from app.models.category_model import Category, ensure_default_categories
+from app.utils.activity_logger import log_activity
 from app.utils.decorators import login_required
 from extensions.db import db
 
@@ -44,6 +45,7 @@ def add_category():
     db.session.add(
         Category(user_id=session["user_id"], name=name, type=category_type)
     )
+    log_activity("category_added", f"Added {category_type} category {name}")
     db.session.commit()
     flash("Category added successfully")
     return redirect(url_for("categories.category_list"))
@@ -55,6 +57,7 @@ def delete_category(category_id):
     category = Category.query.filter_by(
         id=category_id, user_id=session["user_id"]
     ).first_or_404()
+    log_activity("category_deleted", f"Deleted category {category.name}")
     db.session.delete(category)
     db.session.commit()
     flash("Category deleted successfully")

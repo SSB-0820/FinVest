@@ -3,6 +3,7 @@ CREATE TABLE IF NOT EXISTS users (
     name VARCHAR(100) NOT NULL,
     email VARCHAR(150) NOT NULL UNIQUE,
     role ENUM('user', 'admin') DEFAULT 'user',
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
     password_hash VARCHAR(255) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -70,4 +71,14 @@ CREATE TABLE IF NOT EXISTS goals (
     deadline DATE,
     status VARCHAR(50),
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS activity_logs (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NULL,
+    user_name VARCHAR(100) NOT NULL,
+    user_email VARCHAR(150) NOT NULL,
+    action VARCHAR(100) NOT NULL,
+    details VARCHAR(255),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

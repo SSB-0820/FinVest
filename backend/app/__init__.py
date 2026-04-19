@@ -10,6 +10,7 @@ from app.routes.transaction_routes import transactions
 
 # Import models so SQLAlchemy sees all tables before create_all runs.
 from app.models.account_model import Account
+from app.models.activity_log_model import ActivityLog
 from app.models.budget_model import Budget
 from app.models.category_model import Category
 from app.models.goal_model import Goal

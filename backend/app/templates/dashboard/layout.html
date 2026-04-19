@@ -31,7 +31,13 @@
                 <p class="page-subtitle">{% block page_subtitle %}{% endblock %}</p>
             </div>
             <div class="header-right">
-                <div class="avatar">{{ session.get('username', 'U')[:1] }}</div>
+                <a href="{{ url_for('dashboard.account') }}" class="profile-chip">
+                    <div class="avatar">{{ session.get('username', 'U')[:1] }}</div>
+                    <div class="profile-meta">
+                        <strong>{{ session.get('username', 'User') }}</strong>
+                        <span>Profile</span>
+                    </div>
+                </a>
             </div>
         </header>
 

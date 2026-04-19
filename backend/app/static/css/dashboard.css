@@ -88,6 +88,14 @@ body {
     align-items: center;
 }
 
+.profile-chip {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+    color: inherit;
+}
+
 .avatar {
     width: 42px;
     height: 42px;
@@ -98,6 +106,21 @@ body {
     align-items: center;
     justify-content: center;
     font-weight: 700;
+}
+
+.profile-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.profile-meta strong {
+    font-size: 14px;
+}
+
+.profile-meta span {
+    color: #8A8F9E;
+    font-size: 12px;
 }
 
 .flash-stack {
@@ -119,7 +142,7 @@ body {
 
 .stats-grid {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 16px;
     margin-bottom: 18px;
 }
@@ -279,10 +302,33 @@ body {
 }
 
 .pie-chart {
+    position: relative;
     width: 180px;
     height: 180px;
     border-radius: 50%;
-    border: 10px solid rgba(255, 255, 255, 0.04);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+}
+
+.pie-chart-hole {
+    position: absolute;
+    inset: 28px;
+    border-radius: 50%;
+    background: #111520;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 10px;
+}
+
+.pie-chart-hole strong {
+    font-size: 14px;
+}
+
+.pie-chart-hole span {
+    color: #8A8F9E;
+    font-size: 11px;
 }
 
 .legend-list {
@@ -372,6 +418,11 @@ body {
     align-items: end;
 }
 
+.form-grid.six-col {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    align-items: end;
+}
+
 label {
     display: flex;
     flex-direction: column;
@@ -417,6 +468,16 @@ select:focus {
     color: #e07070;
     cursor: pointer;
     padding: 0;
+}
+
+.btn-secondary-action {
+    background: rgba(255, 255, 255, 0.08);
+    color: #EAE6DF;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+    padding: 10px 12px;
+    font-weight: 600;
+    cursor: pointer;
 }
 
 .row-actions {
@@ -481,10 +542,12 @@ select:focus {
     display: flex;
     align-items: center;
     gap: 8px;
+    flex-wrap: wrap;
 }
 
-.inline-filter input {
-    width: 90px;
+.inline-filter input,
+.inline-filter select {
+    width: 120px;
 }
 
 .budget-list,
@@ -523,6 +586,60 @@ select:focus {
     flex-wrap: wrap;
 }
 
+.inline-amount-form {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin: 12px 0;
+}
+
+.inline-amount-form input {
+    flex: 1;
+}
+
+.activity-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.activity-row {
+    padding: 12px;
+    border-radius: 12px;
+    background: #0F141E;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.activity-header,
+.activity-body {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.activity-body {
+    margin-top: 8px;
+    align-items: flex-start;
+    flex-direction: column;
+}
+
+.admin-grid {
+    align-items: start;
+}
+
+.admin-actions {
+    align-items: center;
+}
+
+.admin-stats {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.no-margin {
+    margin: 0;
+}
+
 .empty-text {
     color: #8A8F9E;
     margin: 0;
@@ -539,6 +656,7 @@ select:focus {
     }
 
     .form-grid.four-col,
+    .form-grid.six-col,
     .form-grid.two-col,
     .stats-grid {
         grid-template-columns: 1fr;

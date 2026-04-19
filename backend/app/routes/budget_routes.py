@@ -7,6 +7,7 @@ from app.models.budget_model import Budget
 from app.models.category_model import Category, ensure_default_categories
 from app.models.transaction_model import Transaction
 from app.models.user_settings_model import get_or_create_user_settings
+from app.utils.activity_logger import log_activity
 from app.utils.decorators import login_required
 from extensions.db import db
 
@@ -79,12 +80,19 @@ def add_budget():
     month = int(request.form.get("month"))
     year = int(request.form.get("year"))
     limit_amount = Decimal(request.form.get("limit_amount", "0") or "0")
+    if limit_amount <= 0:
+        flash("Budget amount must be greater than 0")
+        return redirect(url_for("budgets.budget_list", month=month, year=year))
 
     existing = Budget.query.filter_by(
         user_id=user_id, category_id=category_id, month=month, year=year
     ).first()
     if existing:
         existing.limit_amount = limit_amount
+        log_activity(
+            "budget_updated",
+            f"Updated budget for category #{category_id} to {limit_amount:.2f}",
+        )
         flash("Budget updated successfully")
     else:
         db.session.add(
@@ -95,6 +103,10 @@ def add_budget():
                 month=month,
                 year=year,
             )
+        )
+        log_activity(
+            "budget_added",
+            f"Added budget for category #{category_id} with limit {limit_amount:.2f}",
         )
         flash("Budget added successfully")
 
@@ -108,6 +120,7 @@ def delete_budget(budget_id):
     item = Budget.query.filter_by(id=budget_id, user_id=session["user_id"]).first_or_404()
     month = item.month
     year = item.year
+    log_activity("budget_deleted", f"Deleted budget #{item.id}")
     db.session.delete(item)
     db.session.commit()
     flash("Budget deleted successfully")

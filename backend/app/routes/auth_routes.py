@@ -7,6 +7,7 @@ from app.models.account_model import ensure_default_account
 from app.models.category_model import ensure_default_categories
 from app.models.user_model import User
 from app.models.user_settings_model import get_or_create_user_settings
+from app.utils.activity_logger import log_activity
 from app.utils.decorators import ADMIN_EMAIL
 from extensions.db import db
 
@@ -101,12 +102,24 @@ def login():
         flash(f"Wrong Password! Attempts left: {3 - session['login_attempts']}")
         return redirect(url_for("auth.auth_page", mode="login"))
 
+    if not user.is_active:
+        flash("Your account is blocked. Please contact admin")
+        return redirect(url_for("auth.auth_page", mode="login"))
+
     session["user_id"] = user.id
     session["username"] = user.name
     session["email"] = user.email
     session["role"] = user.role
     session.pop("login_attempts", None)
     session.pop("last_attempt_time", None)
+    log_activity(
+        "login",
+        "Logged into the system",
+        user_id=user.id,
+        user_name=user.name,
+        user_email=user.email,
+    )
+    db.session.commit()
 
     if user.role == "admin":
         return redirect(url_for("dashboard.admin_dashboard"))
@@ -116,6 +129,15 @@ def login():
 
 @auth.route("/logout")
 def logout():
+    if session.get("user_id"):
+        log_activity(
+            "logout",
+            "Logged out of the system",
+            user_id=session.get("user_id"),
+            user_name=session.get("username"),
+            user_email=session.get("email"),
+        )
+        db.session.commit()
     session.clear()
     flash("Logged out successfully")
     return redirect(url_for("auth.onboarding"))
