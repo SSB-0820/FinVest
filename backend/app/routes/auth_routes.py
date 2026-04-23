@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+import re
 
 from flask import Blueprint, flash, redirect, render_template, request, session, url_for
 from werkzeug.security import check_password_hash, generate_password_hash
@@ -12,6 +13,11 @@ from app.utils.decorators import ADMIN_EMAIL
 from extensions.db import db
 
 auth = Blueprint("auth", __name__)
+
+USERNAME_PATTERN = re.compile(r"^[A-Za-z0-9_.]+$")
+PASSWORD_PATTERN = re.compile(
+    r"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_\-+=\[\]{}|\\:;\"'<>,.?/]).{8,}$"
+)
 
 
 @auth.route("/")
@@ -34,6 +40,17 @@ def register():
 
     if not username or not email or not password:
         flash("Please fill all fields")
+        return redirect(url_for("auth.auth_page", mode="signup"))
+
+    username = username.strip()
+    email = email.strip().lower()
+
+    if not USERNAME_PATTERN.match(username):
+        flash("Username can use only letters, numbers, underscore and dot")
+        return redirect(url_for("auth.auth_page", mode="signup"))
+
+    if not PASSWORD_PATTERN.match(password):
+        flash("Password must be 8+ chars with uppercase, lowercase, number and special symbol")
         return redirect(url_for("auth.auth_page", mode="signup"))
 
     if password != confirm_password:
@@ -76,6 +93,9 @@ def register():
 def login():
     email = request.form.get("email")
     password = request.form.get("password")
+
+    if email:
+        email = email.strip().lower()
 
     if "login_attempts" not in session:
         session["login_attempts"] = 0

@@ -17,25 +17,70 @@
         <div class="helper-text">Users currently blocked from login</div>
     </div>
     <div class="card stat-card">
-        <div class="card-title">Transactions</div>
-        <div class="card-value">{{ total_transactions }}</div>
-        <div class="helper-text">System-wide income and expense records</div>
+        <div class="card-title">Admins</div>
+        <div class="card-value">{{ total_admins }}</div>
+        <div class="helper-text">Admin accounts in the system</div>
     </div>
-    <div class="card stat-card">
-        <div class="card-title">Categories</div>
-        <div class="card-value">{{ total_categories }}</div>
-        <div class="helper-text">All default and custom categories</div>
+</section>
+
+<section class="admin-charts">
+    <div class="chart-card">
+        <div class="panel-header"><span>System Overview</span></div>
+        <div class="chart-stack">
+            {% for item in overview_chart_rows %}
+                <div class="chart-row">
+                    <span class="chart-label">{{ item.label }}</span>
+                    <div class="chart-track">
+                        <div class="chart-fill {% if item.tone == 'blue' %}blue{% elif item.tone == 'green' %}green{% elif item.tone == 'red' %}red{% endif %}" style="width: {{ item.width }}%"></div>
+                    </div>
+                    <span class="chart-value">{{ item.value }}</span>
+                </div>
+            {% endfor %}
+        </div>
     </div>
-    <div class="card stat-card">
-        <div class="card-title">Budgets</div>
-        <div class="card-value">{{ total_budgets }}</div>
-        <div class="helper-text">Budget plans saved by users</div>
+
+    <div class="chart-card">
+        <div class="panel-header"><span>Today at a Glance</span></div>
+        <div class="mini-stats-grid">
+            <div class="mini-stat">
+                <span class="helper-text">Logins Today</span>
+                <strong>{{ login_events_today }}</strong>
+            </div>
+            <div class="mini-stat">
+                <span class="helper-text">New Users Today</span>
+                <strong>{{ users_created_today }}</strong>
+            </div>
+            <div class="mini-stat">
+                <span class="helper-text">Logouts Today</span>
+                <strong>{{ logout_events_today }}</strong>
+            </div>
+            <div class="mini-stat">
+                <span class="helper-text">Transactions Today</span>
+                <strong>{{ transactions_today }}</strong>
+            </div>
+        </div>
     </div>
-    <div class="card stat-card">
-        <div class="card-title">Goals</div>
-        <div class="card-value">{{ total_goals }}</div>
-        <div class="helper-text">Saving goals created by users</div>
+</section>
+
+<section class="chart-card">
+    <div class="panel-header"><span>Last 7 Days Activity</span></div>
+    <div class="chart-stack">
+        {% for item in daily_activity_rows %}
+            <div class="chart-row">
+                <span class="chart-label">{{ item.label }}</span>
+                <div>
+                    <div class="chart-track chart-track-spaced">
+                        <div class="chart-fill blue" style="width: {{ item.login_width }}%"></div>
+                    </div>
+                    <div class="chart-track chart-track-spaced">
+                        <div class="chart-fill green" style="width: {{ item.signup_width }}%"></div>
+                    </div>
+                </div>
+                <span class="chart-value">{{ item.logins }}/{{ item.signups }}</span>
+            </div>
+        {% endfor %}
     </div>
+    <p class="helper-text no-margin">Blue shows logins, green shows new registrations.</p>
 </section>
 
 <section class="content-grid admin-grid">
@@ -160,24 +205,6 @@
             {% else %}
                 <p class="empty-text">No activity found.</p>
             {% endif %}
-        </div>
-
-        <div class="panel">
-            <div class="panel-header"><span>Admin Login</span></div>
-            <div class="list-row">
-                <div>
-                    <strong>Email</strong>
-                    <div class="helper-text">Single system admin account</div>
-                </div>
-                <span>admin@gmail.com</span>
-            </div>
-            <div class="list-row">
-                <div>
-                    <strong>Password</strong>
-                    <div class="helper-text">Manual DB entry account</div>
-                </div>
-                <span>admin@123</span>
-            </div>
         </div>
     </div>
 </section>

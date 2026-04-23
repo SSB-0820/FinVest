@@ -1,5 +1,5 @@
 from collections import defaultdict
-from datetime import date
+from datetime import date, timedelta
 from decimal import Decimal
 
 from flask import Blueprint, flash, redirect, render_template, request, session, url_for
@@ -281,6 +281,7 @@ def delete_account(account_id):
 @admin_required
 def admin_dashboard():
     selected_user_id = request.args.get("user_id", "").strip()
+    today = date.today()
     total_users = User.query.count()
     total_admins = User.query.filter_by(role="admin").count()
     blocked_users = User.query.filter_by(is_active=False).count()
@@ -289,6 +290,7 @@ def admin_dashboard():
     total_budgets = Budget.query.count()
     total_goals = Goal.query.count()
     users = User.query.order_by(User.created_at.desc(), User.id.desc()).all()
+    users_created_today = [user for user in users if user.created_at and user.created_at.date() == today]
 
     transaction_query = Transaction.query.order_by(Transaction.created_at.desc(), Transaction.id.desc())
     activity_query = ActivityLog.query.order_by(ActivityLog.created_at.desc(), ActivityLog.id.desc())
@@ -319,6 +321,7 @@ def admin_dashboard():
                     "action": item.get("action", "activity"),
                     "details": item.get("details", ""),
                     "created_at_label": created_label,
+                    "created_on": str(created_at or "")[:10],
                 }
             )
         else:
@@ -329,8 +332,50 @@ def admin_dashboard():
                     "action": item.action,
                     "details": item.details,
                     "created_at_label": created_label,
+                    "created_on": created_at.strftime("%Y-%m-%d") if created_at else "",
                 }
             )
+
+    activity_source_rows = activity_rows
+    today_key = today.strftime("%Y-%m-%d")
+    login_events_today = sum(1 for item in activity_source_rows if item["action"] == "login" and item["created_on"] == today_key)
+    logout_events_today = sum(1 for item in activity_source_rows if item["action"] == "logout" and item["created_on"] == today_key)
+    transactions_today = [item for item in system_transactions if item.created_at and item.created_at.date() == today]
+
+    overview_chart_rows = [
+        {"label": "Users", "value": total_users, "tone": "gold"},
+        {"label": "Transactions", "value": total_transactions, "tone": "blue"},
+        {"label": "Budgets", "value": total_budgets, "tone": "green"},
+        {"label": "Goals", "value": total_goals, "tone": "red"},
+    ]
+    overview_max = max([row["value"] for row in overview_chart_rows] + [1])
+    for row in overview_chart_rows:
+        row["width"] = max(8, int((row["value"] / overview_max) * 100)) if row["value"] else 0
+
+    daily_activity_rows = []
+    for offset in range(6, -1, -1):
+        day = today - timedelta(days=offset)
+        label = day.strftime("%d %b")
+        logins = sum(
+            1
+            for item in activity_source_rows
+            if item["action"] == "login" and item["created_on"] == day.strftime("%Y-%m-%d")
+        )
+        signups = sum(
+            1 for user in users
+            if user.created_at and user.created_at.date() == day
+        )
+        daily_activity_rows.append(
+            {
+                "label": label,
+                "logins": logins,
+                "signups": signups,
+            }
+        )
+    activity_max = max([max(row["logins"], row["signups"]) for row in daily_activity_rows] + [1])
+    for row in daily_activity_rows:
+        row["login_width"] = max(8, int((row["logins"] / activity_max) * 100)) if row["logins"] else 0
+        row["signup_width"] = max(8, int((row["signups"] / activity_max) * 100)) if row["signups"] else 0
 
     return render_template(
         "dashboard/admin.html",
@@ -347,6 +392,12 @@ def admin_dashboard():
         activity_logs=activity_rows,
         system_transactions=system_transactions,
         selected_user_id=selected_user_id,
+        users_created_today=len(users_created_today),
+        login_events_today=login_events_today,
+        logout_events_today=logout_events_today,
+        transactions_today=len(transactions_today),
+        overview_chart_rows=overview_chart_rows,
+        daily_activity_rows=daily_activity_rows,
     )
 
 

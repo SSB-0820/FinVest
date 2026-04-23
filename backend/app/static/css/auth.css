@@ -168,6 +168,7 @@ form {
     position: relative;
     display: flex;
     align-items: center;
+    min-width: 0;
 }
 
 .input-icon {
@@ -201,6 +202,18 @@ select {
         background 0.25s,
         box-shadow 0.25s;
     appearance: none;
+    min-width: 0;
+}
+
+form > * {
+    min-width: 0;
+}
+
+.field-note {
+    font-size: 0.74rem;
+    color: var(--muted);
+    line-height: 1.5;
+    margin-top: -0.15rem;
 }
 
 input::placeholder {

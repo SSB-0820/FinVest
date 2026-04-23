@@ -41,7 +41,7 @@
                         <circle cx="12" cy="8" r="4"></circle>
                         <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"></path>
                     </svg>
-                    <input type="text" name="username" placeholder="Username" />
+                    <input type="text" name="username" placeholder="Username" pattern="[A-Za-z0-9_.]+" title="Use only letters, numbers, underscore and dot" required />
                 </div>
 
                 <div class="input-group">
@@ -49,7 +49,7 @@
                         <rect x="2" y="4" width="20" height="16" rx="2"></rect>
                         <path d="M2 7l10 7 10-7"></path>
                     </svg>
-                    <input type="email" name="email" placeholder="Email Address" />
+                    <input type="email" name="email" placeholder="Email Address" required />
                 </div>
 
                 <!-- <div class="input-group select-group">
@@ -72,7 +72,7 @@
                         <rect x="5" y="11" width="14" height="10" rx="2"></rect>
                         <path d="M8 11V7a4 4 0 018 0v4"></path>
                     </svg>
-                    <input type="password" name="password" placeholder="Password" />
+                    <input type="password" name="password" placeholder="Password" minlength="8" title="8+ chars with uppercase, lowercase, number and special symbol" required />
                 </div>
 
                 <div class="input-group">
@@ -81,8 +81,10 @@
                         <rect x="5" y="11" width="14" height="10" rx="2"></rect>
                         <path d="M8 11V7a4 4 0 018 0v4"></path>
                     </svg>
-                    <input type="password" name="confirm_password" placeholder="Confirm Password" />
+                    <input type="password" name="confirm_password" placeholder="Confirm Password" minlength="8" required />
                 </div>
+
+                <p class="field-note">Username: letters, numbers, `_` and `.` only. Password: 8+ chars with uppercase, lowercase, number and symbol.</p>
 
                 <button type="submit" class="btn-main">
                     <span>Sign Up</span>
@@ -111,7 +113,7 @@
                         <rect x="2" y="4" width="20" height="16" rx="2"></rect>
                         <path d="M2 7l10 7 10-7"></path>
                     </svg>
-                    <input type="email" name="email" placeholder="Email Address" />
+                    <input type="email" name="email" placeholder="Email Address" required />
                 </div>
 
                 <div class="input-group">
@@ -119,7 +121,7 @@
                         <rect x="5" y="11" width="14" height="10" rx="2"></rect>
                         <path d="M8 11V7a4 4 0 018 0v4"></path>
                     </svg>
-                    <input type="password" name="password" placeholder="Password" />
+                    <input type="password" name="password" placeholder="Password" required />
                 </div>
 
                 <a href="#" class="forgot">Forgot Password?</a>
