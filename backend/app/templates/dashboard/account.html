@@ -41,6 +41,14 @@
                         <input type="text" name="locale" value="{{ settings.locale or 'en-IN' }}">
                     </label>
                     <label>
+                        <span>Language</span>
+                        <select name="language">
+                            {% for code, label in available_languages.items() %}
+                                <option value="{{ code }}" {% if (settings.language or 'en') == code %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </label>
+                    <label>
                         <span>Month Start Day</span>
                         <input type="number" name="month_start_day" min="1" max="28" value="{{ settings.month_start_day or 1 }}">
                     </label>
@@ -50,6 +58,27 @@
                     </label>
                 </div>
                 <button type="submit" class="btn-primary-action">Save Settings</button>
+            </form>
+        </div>
+
+        <div class="card form-card">
+            <div class="panel-header"><span>Reset Password</span></div>
+            <form method="POST" action="{{ url_for('dashboard.update_password') }}" class="stack-form">
+                <div class="form-grid">
+                    <label>
+                        <span>Current Password</span>
+                        <input type="password" name="current_password" required>
+                    </label>
+                    <label>
+                        <span>New Password</span>
+                        <input type="password" name="new_password" minlength="8" required>
+                    </label>
+                    <label>
+                        <span>Confirm Password</span>
+                        <input type="password" name="confirm_password" minlength="8" required>
+                    </label>
+                </div>
+                <button type="submit" class="btn-primary-action">Update Password</button>
             </form>
         </div>
     </div>

@@ -10,14 +10,33 @@
     <div class="panel-header">
         <span>Quick Guide</span>
         <form method="POST" action="{{ url_for('dashboard.dismiss_guide') }}">
-            <button type="submit" class="btn-link-danger">Skip</button>
+            <button type="submit" class="btn-link-danger">Hide</button>
         </form>
     </div>
-    <div class="guide-grid">
-        <div class="guide-card">1. Add income and expense transactions to update your balance.</div>
-        <div class="guide-card">2. Create budgets and track overspending alerts.</div>
-        <div class="guide-card">3. Use goals, reports, and notifications to review progress.</div>
+    <div class="guide-timeline">
+        <a href="{{ url_for('transactions.transaction_list') }}" class="guide-step">
+            <span class="guide-dot">1</span>
+            <strong>Record money movement</strong>
+            <small>Add income and expenses so balances, reports, and alerts stay current.</small>
+        </a>
+        <a href="{{ url_for('budgets.budget_list') }}" class="guide-step">
+            <span class="guide-dot">2</span>
+            <strong>Control repeat spending</strong>
+            <small>Set budgets and save recurring bills for automatic deductions.</small>
+        </a>
+        <a href="{{ url_for('reports.report_list') }}" class="guide-step">
+            <span class="guide-dot">3</span>
+            <strong>Review patterns</strong>
+            <small>Use charts and KPIs to see trends before they become surprises.</small>
+        </a>
     </div>
+</section>
+{% else %}
+<section class="guide-compact">
+    <span>Quick guide is hidden.</span>
+    <form method="POST" action="{{ url_for('dashboard.show_guide') }}">
+        <button type="submit" class="btn-secondary-action small">Show Guide</button>
+    </form>
 </section>
 {% endif %}
 <section class="stats-grid">

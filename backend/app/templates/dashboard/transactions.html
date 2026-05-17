@@ -69,7 +69,7 @@
                                 <td><span class="type-chip {{ item.type }}">{{ item.type }}</span></td>
                                 <td>{{ item.category.name }}</td>
                                 <td>{{ item.account.account_name }}</td>
-                                <td>{{ '%.2f'|format(item.amount) }}</td>
+                                <td>{{ item.amount|money }}</td>
                                 <td>{{ item.description or '-' }}</td>
                                 <td>
                                     <details class="inline-editor">
@@ -152,6 +152,19 @@
                     <input type="text" name="description" placeholder="Optional note">
                 </label>
                 <button type="submit" class="btn-primary-action">Add Transaction</button>
+            </form>
+        </div>
+
+        <div class="panel form-card">
+            <div class="panel-header"><span>Import Transaction</span></div>
+            <form method="POST" action="{{ url_for('transactions.import_transactions_csv') }}" enctype="multipart/form-data" class="stack-form">
+                <label>
+                    <span>CSV File</span>
+                    <input type="file" name="transaction_csv" accept=".csv,text/csv" required>
+                </label>
+                <p class="helper-text no-margin">Required columns: date, type, category, amount. Optional: account, description.</p>
+                <button type="submit" class="btn-primary-action">Import Transactions CSV</button>
+                <a href="{{ url_for('static', filename='samples/dummy_transactions.csv') }}" class="btn-secondary-action export-link">Download Sample CSV</a>
             </form>
         </div>
     </div>

@@ -137,6 +137,11 @@ body {
     pointer-events: all;
 }
 
+.sign-up form {
+    max-height: 580px;
+    overflow-y: auto;
+}
+
 form {
     width: 100%;
     display: flex;
@@ -266,6 +271,10 @@ select:hover {
     margin-top: -0.25rem;
     transition: color 0.2s;
     letter-spacing: 0.02em;
+    background: transparent;
+    border: 0;
+    cursor: pointer;
+    font-family: "DM Sans", sans-serif;
 }
 
 .forgot:hover {
@@ -369,6 +378,77 @@ select:hover {
 
 .switch:hover {
     border-color: var(--gold);
+}
+
+.security-questions {
+    display: grid;
+    gap: 0.6rem;
+}
+
+.security-questions label,
+.reset-field {
+    display: grid;
+    gap: 0.35rem;
+}
+
+.security-questions span,
+.reset-field span {
+    color: var(--muted);
+    font-size: 0.72rem;
+    line-height: 1.35;
+}
+
+.security-questions input,
+.reset-field input {
+    padding-left: 1rem;
+}
+
+.reset-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 1300;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    background: rgba(10, 13, 18, 0.72);
+    backdrop-filter: blur(9px);
+    -webkit-backdrop-filter: blur(9px);
+}
+
+.reset-overlay.is-visible {
+    display: flex;
+}
+
+.reset-card {
+    position: relative;
+    width: min(420px, calc(100vw - 2rem));
+    background: var(--dark-2);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    box-shadow:
+        0 30px 70px rgba(0, 0, 0, 0.5),
+        inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    animation: popup 0.28s ease;
+}
+
+.reset-form {
+    padding: 2rem;
+}
+
+.reset-close {
+    position: absolute;
+    top: 12px;
+    right: 14px;
+    background: transparent;
+    border: 0;
+    color: var(--muted);
+    font-size: 1.5rem;
+    cursor: pointer;
+    line-height: 1;
+}
+
+.reset-close:hover {
+    color: var(--gold);
 }
 
 .overlay-container {

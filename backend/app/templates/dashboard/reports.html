@@ -18,6 +18,18 @@
         <div class="card-title">Net</div>
         <div class="card-value">{{ settings.currency }} {{ '%.2f'|format(net) }}</div>
     </div>
+    <div class="card stat-card">
+        <div class="card-title">Avg Monthly Spending</div>
+        <div class="card-value">{{ settings.currency }} {{ '%.2f'|format(average_monthly_spending) }}</div>
+    </div>
+    <div class="card stat-card">
+        <div class="card-title">Savings Rate</div>
+        <div class="card-value {% if savings_rate >= 0 %}up{% else %}warn{% endif %}">{{ '%.1f'|format(savings_rate) }}%</div>
+    </div>
+    <div class="card stat-card">
+        <div class="card-title">Top Expense Category</div>
+        <div class="card-value small-value">{{ top_category[0] if top_category else 'None' }}</div>
+    </div>
 </section>
 
 <section class="content-grid">
@@ -56,16 +68,27 @@
 
         <div class="panel">
             <div class="panel-header"><span>Category Analysis</span></div>
-            {% if category_rows %}
-                <div class="budget-list">
-                    {% for name, amount in category_rows %}
-                        <div class="budget-card-row">
-                            <div class="budget-card-header">
-                                <strong>{{ name }}</strong>
-                                <span>{{ settings.currency }} {{ '%.2f'|format(amount) }}</span>
+            {% if category_chart_rows %}
+                <div class="chart-layout">
+                    <div class="pie-wrap">
+                        <div class="pie-chart report-pie" data-pie='{{ category_pie_rows|tojson }}'>
+                            <div class="pie-chart-hole">
+                                <strong>{{ top_category[0] if top_category else 'No Data' }}</strong>
+                                <span>Top expense</span>
                             </div>
                         </div>
-                    {% endfor %}
+                    </div>
+                    <div class="legend-list">
+                        {% for item in category_chart_rows[:6] %}
+                            <div class="legend-item">
+                                <span class="legend-dot report-dot"></span>
+                                <div class="legend-text">
+                                    <strong>{{ item.name }}</strong>
+                                    <small>{{ settings.currency }} {{ '%.2f'|format(item.amount) }} | {{ item.percent }}%</small>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
                 </div>
             {% else %}
                 <p class="empty-text">No category data available for the selected filter.</p>
@@ -73,21 +96,87 @@
         </div>
 
         <div class="panel">
-            <div class="panel-header"><span>Monthly Summary</span></div>
+            <div class="panel-header"><span>Income vs Expense Trend</span></div>
             {% if monthly_rows %}
                 <div class="compare-list">
                     {% for item in monthly_rows %}
                         <div class="compare-row">
                             <div class="compare-label">{{ item.label }}</div>
+                            <div class="compare-bars">
+                                <div class="compare-bar-group">
+                                    <span class="mini-label">Income</span>
+                                    <div class="bar tall"><div class="bar-income" style="width: {{ item.income_width }}%"></div></div>
+                                </div>
+                                <div class="compare-bar-group">
+                                    <span class="mini-label">Expense</span>
+                                    <div class="bar tall red"><div class="bar-expense" style="width: {{ item.expense_width }}%"></div></div>
+                                </div>
+                            </div>
                             <div class="compare-values">
-                                <span class="up">Income: {{ settings.currency }} {{ '%.2f'|format(item.income) }}</span>
-                                <span class="warn">Expense: {{ settings.currency }} {{ '%.2f'|format(item.expense) }}</span>
+                                <span class="up">{{ settings.currency }} {{ '%.0f'|format(item.income) }}</span>
+                                <span class="warn">{{ settings.currency }} {{ '%.0f'|format(item.expense) }}</span>
                             </div>
                         </div>
                     {% endfor %}
                 </div>
             {% else %}
                 <p class="empty-text">No monthly summary available yet.</p>
+            {% endif %}
+        </div>
+
+        <div class="panel">
+            <div class="panel-header"><span>Monthly Summary</span></div>
+            {% if monthly_rows %}
+                <div class="monthly-column-chart">
+                    {% for item in monthly_rows %}
+                        <div class="monthly-column">
+                            <div class="column-pair">
+                                <span class="column-fill income" style="height: {{ item.income_width }}%"></span>
+                                <span class="column-fill expense" style="height: {{ item.expense_width }}%"></span>
+                            </div>
+                            <span class="chart-label">{{ item.label }}</span>
+                        </div>
+                    {% endfor %}
+                </div>
+                <p class="helper-text no-margin">Green shows income, red shows expense.</p>
+            {% else %}
+                <p class="empty-text">No monthly summary available yet.</p>
+            {% endif %}
+        </div>
+
+        <div class="panel">
+            <div class="panel-header"><span>Financial Trends</span></div>
+            {% if trend_rows %}
+                <div class="activity-list">
+                    {% for item in trend_rows %}
+                        <div class="activity-row">
+                            <div class="activity-header">
+                                <strong>{{ item.label }}</strong>
+                                <span class="{% if item.tone == 'green' %}up{% else %}warn{% endif %}">{{ item.value }}</span>
+                            </div>
+                            <p class="helper-text no-margin">{{ item.detail }}</p>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p class="empty-text">Add more transactions to see spending and income trends.</p>
+            {% endif %}
+        </div>
+
+        <div class="panel">
+            <div class="panel-header"><span>Income Source Mix</span></div>
+            {% if income_source_rows %}
+                <div class="chart-stack">
+                    {% for item in income_source_rows %}
+                        <div class="chart-row">
+                            <div class="chart-label">{{ item.name }}</div>
+                            <div class="chart-track"><div class="chart-fill green" style="width: {{ item.width }}%"></div></div>
+                            <div class="chart-value">{{ item.percent }}%</div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p class="empty-text">No income source data available for the selected filter.</p>
             {% endif %}
         </div>
     </div>

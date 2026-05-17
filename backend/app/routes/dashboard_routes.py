@@ -2,7 +2,11 @@ from collections import defaultdict
 from datetime import date, timedelta
 from decimal import Decimal
 
-from flask import Blueprint, flash, redirect, render_template, request, session, url_for
+from time import perf_counter
+
+from flask import Blueprint, current_app, flash, redirect, render_template, request, session, url_for
+from flask import jsonify
+from werkzeug.security import check_password_hash, generate_password_hash
 
 from app.models.account_model import Account, ensure_default_account
 from app.models.activity_log_model import ActivityLog
@@ -12,6 +16,9 @@ from app.models.goal_model import Goal
 from app.models.transaction_model import Transaction
 from app.models.user_model import User
 from app.models.user_settings_model import get_or_create_user_settings
+from app.services.automation_service import process_monthly_salary
+from app.services.active_session_service import count_active_sessions
+from app.services.i18n_service import normalize_language
 from app.utils.activity_logger import log_activity
 from app.utils.decorators import admin_required, login_required
 from extensions.db import db
@@ -231,12 +238,39 @@ def update_settings():
     settings = get_or_create_user_settings(session["user_id"])
     settings.currency = request.form.get("currency", "INR").strip() or "INR"
     settings.locale = request.form.get("locale", "en-IN").strip() or "en-IN"
+    settings.language = normalize_language(request.form.get("language", "en"))
     settings.month_start_day = int(request.form.get("month_start_day", 1) or 1)
     settings.month_start_day = min(max(settings.month_start_day, 1), 28)
     settings.monthly_salary = Decimal(request.form.get("monthly_salary", "0") or "0")
     log_activity("settings_updated", "Updated account settings")
+    process_monthly_salary(session["user_id"])
     db.session.commit()
     flash("Settings updated successfully")
+    return redirect(url_for("dashboard.account"))
+
+
+@dashboard.route("/account/password", methods=["POST"])
+@login_required
+def update_password():
+    user = User.query.get_or_404(session["user_id"])
+    current_password = request.form.get("current_password", "")
+    new_password = request.form.get("new_password", "")
+    confirm_password = request.form.get("confirm_password", "")
+
+    if not check_password_hash(user.password_hash, current_password):
+        flash("Current password is incorrect")
+        return redirect(url_for("dashboard.account"))
+    if len(new_password) < 8:
+        flash("New password must be at least 8 characters")
+        return redirect(url_for("dashboard.account"))
+    if new_password != confirm_password:
+        flash("New password and confirmation do not match")
+        return redirect(url_for("dashboard.account"))
+
+    user.password_hash = generate_password_hash(new_password)
+    log_activity("password_updated", "Updated account password")
+    db.session.commit()
+    flash("Password updated successfully")
     return redirect(url_for("dashboard.account"))
 
 
@@ -298,8 +332,8 @@ def admin_dashboard():
         transaction_query = transaction_query.filter_by(user_id=int(selected_user_id))
         activity_query = activity_query.filter_by(user_id=int(selected_user_id))
 
-    system_transactions = transaction_query.limit(20).all()
-    activity_logs = activity_query.limit(25).all()
+    system_transactions = transaction_query.all()
+    activity_logs = []
     activity_collection = get_collection("activity_logs")
     if activity_collection is not None:
         mongo_filter = {}
@@ -308,6 +342,8 @@ def admin_dashboard():
         mongo_logs = list(activity_collection.find(mongo_filter).sort("_id", -1).limit(25))
         if mongo_logs:
             activity_logs = mongo_logs
+    if not activity_logs:
+        activity_logs = activity_query.limit(25).all()
 
     activity_rows = []
     for item in activity_logs:
@@ -341,6 +377,25 @@ def admin_dashboard():
     login_events_today = sum(1 for item in activity_source_rows if item["action"] == "login" and item["created_on"] == today_key)
     logout_events_today = sum(1 for item in activity_source_rows if item["action"] == "logout" and item["created_on"] == today_key)
     transactions_today = [item for item in system_transactions if item.created_at and item.created_at.date() == today]
+    monthly_category_map = defaultdict(lambda: {"income": Decimal("0"), "expense": Decimal("0"), "count": 0})
+    for item in system_transactions:
+        if not item.date:
+            continue
+        category_name = item.category.name if item.category else "Uncategorized"
+        key = (item.date.strftime("%b %Y"), category_name)
+        monthly_category_map[key][item.type] += Decimal(item.amount or 0)
+        monthly_category_map[key]["count"] += 1
+
+    monthly_category_rows = [
+        {
+            "month": month_label,
+            "category": category_name,
+            "income": values["income"],
+            "expense": values["expense"],
+            "count": values["count"],
+        }
+        for (month_label, category_name), values in monthly_category_map.items()
+    ][:30]
 
     overview_chart_rows = [
         {"label": "Users", "value": total_users, "tone": "gold"},
@@ -390,7 +445,7 @@ def admin_dashboard():
         users=users,
         user_lookup={user.id: user for user in users},
         activity_logs=activity_rows,
-        system_transactions=system_transactions,
+        monthly_category_rows=monthly_category_rows,
         selected_user_id=selected_user_id,
         users_created_today=len(users_created_today),
         login_events_today=login_events_today,
@@ -447,9 +502,77 @@ def delete_user(user_id):
     return redirect(url_for("dashboard.admin_dashboard"))
 
 
+@dashboard.route("/admin/performance")
+@login_required
+@admin_required
+def admin_performance():
+    today = date.today()
+    active_users = count_active_sessions()
+    activity_collection = get_collection("activity_logs")
+    total_logs = (
+        activity_collection.count_documents({})
+        if activity_collection is not None
+        else ActivityLog.query.count()
+    )
+    db_started = perf_counter()
+    db.session.query(db.func.count(User.id)).scalar()
+    db_response_ms = round((perf_counter() - db_started) * 1000, 2)
+
+    total_users = User.query.count()
+    total_transactions = Transaction.query.count()
+    last_response_ms = current_app.config.get("LAST_RESPONSE_MS", 0)
+
+    performance_rows = [
+        {"label": "Active Logins", "value": active_users, "tone": "green"},
+        {"label": "DB Response", "value": db_response_ms, "tone": "blue"},
+        {"label": "Last Request", "value": last_response_ms, "tone": "gold"},
+        {"label": "Activity Logs", "value": total_logs, "tone": "red"},
+    ]
+    max_value = max([Decimal(str(row["value"] or 0)) for row in performance_rows] + [Decimal("1")])
+    for row in performance_rows:
+        value = Decimal(str(row["value"] or 0))
+        row["width"] = max(8, int((value / max_value) * 100)) if value else 0
+
+    growth_rows = [
+        {"label": "Users", "value": total_users, "tone": "green"},
+        {"label": "Transactions", "value": total_transactions, "tone": "blue"},
+        {"label": "Logs", "value": total_logs, "tone": "gold"},
+    ]
+    growth_max = max([row["value"] for row in growth_rows] + [1])
+    for row in growth_rows:
+        row["width"] = max(8, int((row["value"] / growth_max) * 100)) if row["value"] else 0
+
+    return render_template(
+        "dashboard/admin_performance.html",
+        active_page="admin",
+        performance_rows=performance_rows,
+        growth_rows=growth_rows,
+        active_users=active_users,
+        db_response_ms=db_response_ms,
+        last_response_ms=last_response_ms,
+        total_logs=total_logs,
+    )
+
+
+@dashboard.route("/admin/performance/active-users")
+@login_required
+@admin_required
+def admin_active_users():
+    active_users = count_active_sessions()
+    db.session.commit()
+    return jsonify({"active_users": active_users})
+
+
 @dashboard.route("/guide/dismiss", methods=["POST"])
 @login_required
 def dismiss_guide():
     session["guide_dismissed"] = True
     flash("Guide hidden. You can still use the modules from the sidebar.")
+    return redirect(url_for("dashboard.home"))
+
+
+@dashboard.route("/guide/show", methods=["POST"])
+@login_required
+def show_guide():
+    session["guide_dismissed"] = False
     return redirect(url_for("dashboard.home"))

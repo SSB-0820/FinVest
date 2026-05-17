@@ -3,8 +3,10 @@ from decimal import Decimal
 
 from flask import Blueprint, flash, redirect, render_template, request, session, url_for
 
+from app.models.account_model import ensure_default_account
 from app.models.goal_model import Goal
 from app.models.user_settings_model import get_or_create_user_settings
+from app.services.transaction_service import apply_transaction_effect
 from app.utils.activity_logger import log_activity
 from app.utils.decorators import login_required
 from extensions.db import db
@@ -141,7 +143,14 @@ def add_goal_amount(goal_id):
         flash("Add amount must be greater than 0")
         return redirect(url_for("goals.goal_list"))
 
+    account = ensure_default_account(session["user_id"])
+    if Decimal(account.balance or 0) < amount_to_add:
+        db.session.rollback()
+        flash("Not enough balance in your default account to add this goal amount")
+        return redirect(url_for("goals.goal_list"))
+
     item.current_amount = Decimal(item.current_amount or 0) + amount_to_add
+    apply_transaction_effect(account, "expense", amount_to_add)
     if Decimal(item.current_amount or 0) >= Decimal(item.target_amount or 0):
         item.status = "Completed"
 

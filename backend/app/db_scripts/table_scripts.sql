@@ -5,7 +5,17 @@ CREATE TABLE IF NOT EXISTS users (
     role ENUM('user', 'admin') DEFAULT 'user',
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
     password_hash VARCHAR(255) NOT NULL,
+    security_answers TEXT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS active_sessions (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    session_token VARCHAR(120) NOT NULL UNIQUE,
+    last_seen_at DATETIME NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS user_settings (
@@ -13,8 +23,10 @@ CREATE TABLE IF NOT EXISTS user_settings (
     user_id INT NOT NULL,
     currency VARCHAR(10) DEFAULT 'INR',
     locale VARCHAR(20) DEFAULT 'en-IN',
+    language VARCHAR(10) DEFAULT 'en',
     month_start_day INT DEFAULT 1,
     monthly_salary DECIMAL(12, 2) DEFAULT 0,
+    monthly_salary_last_added DATE NULL,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
@@ -59,6 +71,25 @@ CREATE TABLE IF NOT EXISTS budgets (
     month INT NOT NULL,
     year INT NOT NULL,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS recurring_transactions (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    account_id INT NOT NULL,
+    category_id INT NOT NULL,
+    type ENUM('income', 'expense') NOT NULL DEFAULT 'expense',
+    amount DECIMAL(12, 2) NOT NULL,
+    description VARCHAR(255),
+    frequency ENUM('daily', 'monthly', 'yearly') NOT NULL,
+    start_date DATE NOT NULL,
+    next_run_date DATE NOT NULL,
+    last_run_date DATE NULL,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE CASCADE,
     FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE CASCADE
 );
 

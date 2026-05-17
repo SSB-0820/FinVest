@@ -607,6 +607,10 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     cursor: pointer;
 }
 
+.btn-secondary-action.small {
+    padding: 8px 12px;
+}
+
 .row-actions {
     display: flex;
     align-items: center;
@@ -615,6 +619,16 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 
 .table-wrap {
     overflow-x: auto;
+}
+
+.scroll-panel {
+    max-height: 430px;
+    overflow: auto;
+    padding-right: 4px;
+}
+
+.admin-spaced-section {
+    margin-bottom: 18px;
 }
 
 .data-table {
@@ -767,6 +781,11 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
+.admin-stats .small-value {
+    font-size: 20px;
+    line-height: 1.2;
+}
+
 .admin-charts {
     display: grid;
     grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr);
@@ -838,6 +857,66 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     color: #EAE6DF;
 }
 
+.monthly-column-chart {
+    min-height: 230px;
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(68px, 1fr);
+    gap: 14px;
+    align-items: end;
+    overflow-x: auto;
+    padding-bottom: 8px;
+}
+
+.monthly-column {
+    display: grid;
+    gap: 8px;
+    justify-items: center;
+}
+
+.column-pair {
+    height: 170px;
+    display: flex;
+    align-items: end;
+    gap: 8px;
+}
+
+.column-fill {
+    width: 18px;
+    min-height: 4px;
+    border-radius: 999px 999px 4px 4px;
+    background: #5ECB8C;
+}
+
+.column-fill.expense {
+    background: #e07070;
+}
+
+.report-dot:nth-of-type(1),
+.legend-item:nth-child(1) .report-dot {
+    background: #C9A84C;
+}
+
+.legend-item:nth-child(2) .report-dot {
+    background: #4f8ef7;
+}
+
+.legend-item:nth-child(3) .report-dot {
+    background: #5ECB8C;
+}
+
+.legend-item:nth-child(4) .report-dot {
+    background: #e07070;
+}
+
+.legend-item:nth-child(5) .report-dot {
+    background: #8A8F9E;
+}
+
+.legend-item:nth-child(6) .report-dot {
+    background: #8090f0;
+}
+
 .mini-stats-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -866,18 +945,57 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     margin-bottom: 18px;
 }
 
-.guide-grid {
+.guide-timeline {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 12px;
 }
 
-.guide-card {
+.guide-step {
+    display: grid;
+    grid-template-columns: 34px minmax(0, 1fr);
+    gap: 6px 10px;
     padding: 14px;
     border-radius: 14px;
     background: #0F141E;
     border: 1px solid rgba(255, 255, 255, 0.05);
     color: #EAE6DF;
+    text-decoration: none;
+}
+
+.guide-step:hover {
+    border-color: rgba(201, 168, 76, 0.32);
+}
+
+.guide-dot {
+    grid-row: span 2;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: rgba(201, 168, 76, 0.12);
+    color: #C9A84C;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+}
+
+.guide-step small {
+    color: #8A8F9E;
+    line-height: 1.4;
+}
+
+.guide-compact {
+    margin-bottom: 18px;
+    padding: 12px 14px;
+    border-radius: 14px;
+    background: #111520;
+    border: 1px solid rgba(201, 168, 76, 0.12);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    color: #8A8F9E;
 }
 
 .export-link {
@@ -907,7 +1025,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     .form-grid.four-col,
     .form-grid.six-col,
     .form-grid.two-col,
-    .guide-grid,
+    .guide-timeline,
     .mini-stats-grid,
     .stats-grid {
         grid-template-columns: 1fr;

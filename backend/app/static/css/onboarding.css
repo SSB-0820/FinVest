@@ -121,7 +121,7 @@ nav {
 .hero {
   position: relative;
   z-index: 1;
-  min-height: 100vh;
+  min-height: 92vh;
   display: grid;
   grid-template-columns: 1fr 1fr;
   align-items: center;
@@ -274,9 +274,33 @@ h1 em {
   margin-bottom: 1.75rem;
 }
 
-.mini-chart svg {
-  width: 100%;
-  height: 100%;
+.performance-chart {
+  display: flex;
+  align-items: end;
+  gap: 0.7rem;
+  padding: 0.8rem 0 0.2rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.performance-chart span {
+  flex: 1;
+  min-height: 14px;
+  border-radius: 999px 999px 4px 4px;
+  background: linear-gradient(180deg, var(--gold), rgba(201, 168, 76, 0.12));
+  animation: barPulse 3.6s ease-in-out infinite;
+}
+
+.performance-chart span:nth-child(2n) {
+  animation-delay: 0.35s;
+}
+
+.performance-chart span:nth-child(3n) {
+  animation-delay: 0.7s;
+}
+
+@keyframes barPulse {
+  0%, 100% { filter: brightness(0.9); transform: scaleY(0.96); }
+  50% { filter: brightness(1.15); transform: scaleY(1.04); }
 }
 
 .assets {
@@ -377,34 +401,141 @@ h1 em {
   color: #5ECB8C;
 }
 
-.stats-bar {
+.workflow-section {
   position: relative;
   z-index: 1;
-  border-top: 1px solid var(--border);
-  padding: 2.5rem 5%;
   max-width: 1300px;
-  margin: 0 auto;
-  display: flex;
-  gap: 3rem;
+  margin: 0 auto 4rem;
+  padding: 4rem 5%;
+  border-top: 1px solid var(--border);
+  display: grid;
+  grid-template-columns: minmax(260px, 0.8fr) minmax(0, 1.2fr);
+  gap: 4rem;
+  align-items: center;
   animation: fadeUp 0.9s 0.7s ease both;
 }
 
-.stat {
-  flex: 1;
+.workflow-rail {
+  position: relative;
+  min-height: 360px;
+  border-radius: 18px;
+  background: var(--dark-2);
+  border: 1px solid var(--border);
+  overflow: hidden;
 }
 
-.stat-num {
-  font-family: "Cormorant Garamond", serif;
-  font-size: 2rem;
-  font-weight: 600;
+.rail-line {
+  position: absolute;
+  top: 58px;
+  left: 50%;
+  width: 2px;
+  height: 250px;
+  background: linear-gradient(180deg, transparent, var(--gold), transparent);
+  animation: railGlow 3s ease-in-out infinite;
+}
+
+@keyframes railGlow {
+  0%, 100% { opacity: 0.45; }
+  50% { opacity: 1; }
+}
+
+.flow-node {
+  position: absolute;
+  left: calc(50% - 22px);
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--dark-3);
+  border: 1px solid var(--border);
   color: var(--gold);
-  display: block;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  animation: nodeFloat 4s ease-in-out infinite;
 }
 
-.stat-label {
-  font-size: 0.78rem;
+.node-one { top: 42px; }
+.node-two { top: 120px; animation-delay: 0.25s; }
+.node-three { top: 198px; animation-delay: 0.5s; }
+.node-four { top: 276px; animation-delay: 0.75s; }
+
+@keyframes nodeFloat {
+  0%, 100% { transform: translateX(-24px); }
+  50% { transform: translateX(24px); }
+}
+
+.workflow-copy h2 {
+  font-family: "Cormorant Garamond", serif;
+  font-size: clamp(2.2rem, 4vw, 4rem);
+  font-weight: 400;
+  line-height: 1.05;
+  margin-bottom: 1.5rem;
+}
+
+.workflow-steps {
+  display: grid;
+  gap: 1rem;
+}
+
+.workflow-steps div {
+  display: grid;
+  gap: 0.25rem;
+  padding: 1rem 1.1rem;
+  border-radius: 14px;
+  background: rgba(17, 21, 32, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.workflow-steps strong {
+  color: var(--text);
+}
+
+.workflow-steps span {
   color: var(--muted);
-  letter-spacing: 0.06em;
+  line-height: 1.5;
+  font-size: 0.9rem;
+}
+
+.site-footer {
+  position: relative;
+  z-index: 1;
+  max-width: 1300px;
+  margin: 0 auto;
+  padding: 2rem 5% 2.4rem;
+  border-top: 1px solid var(--border);
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(240px, 0.8fr) auto;
+  gap: 1.5rem;
+  align-items: center;
+  animation: fadeUp 0.9s ease both;
+}
+
+.footer-logo {
+  margin-bottom: 0.5rem;
+}
+
+.site-footer p,
+.footer-copy {
+  color: var(--muted);
+  font-size: 0.84rem;
+  line-height: 1.6;
+}
+
+.footer-links {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.footer-links a {
+  color: var(--muted);
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.footer-links a:hover {
+  color: var(--gold);
 }
 
 @media (max-width: 860px) {
@@ -417,9 +548,9 @@ h1 em {
     display: none;
   }
 
-  .stats-bar {
-    flex-wrap: wrap;
-    gap: 1.5rem;
+  .workflow-section,
+  .site-footer {
+    grid-template-columns: 1fr;
   }
 
   nav {

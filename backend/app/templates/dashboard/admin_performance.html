@@ -1,0 +1,83 @@
+{% extends "dashboard/layout.html" %}
+
+{% block title %}Performance | FinVest{% endblock %}
+{% block page_title %}System Performance{% endblock %}
+{% block page_subtitle %}Monitor system load, database responsiveness, and activity growth for developer handoff.{% endblock %}
+
+{% block content %}
+<section class="stats-grid admin-stats">
+    <div class="card stat-card">
+        <div class="card-title">Active Logins</div>
+        <div class="card-value" id="activeUsersValue">{{ active_users }}</div>
+        <div class="helper-text">Currently logged-in sessions</div>
+    </div>
+    <div class="card stat-card">
+        <div class="card-title">DB Response</div>
+        <div class="card-value">{{ db_response_ms }} ms</div>
+        <div class="helper-text">Measured with a lightweight user count query</div>
+    </div>
+    <div class="card stat-card">
+        <div class="card-title">Last Request</div>
+        <div class="card-value">{{ last_response_ms }} ms</div>
+        <div class="helper-text">Latest Flask request processing time</div>
+    </div>
+</section>
+
+<section class="admin-charts">
+    <div class="chart-card">
+        <div class="panel-header"><span>System Health Metrics</span></div>
+        <div class="chart-stack">
+            {% for item in performance_rows %}
+                <div class="chart-row">
+                    <span class="chart-label">{{ item.label }}</span>
+                    <div class="chart-track">
+                        <div class="chart-fill {% if item.tone == 'blue' %}blue{% elif item.tone == 'green' %}green{% elif item.tone == 'red' %}red{% endif %}" style="width: {{ item.width }}%"></div>
+                    </div>
+                    <span class="chart-value">{{ item.value }}</span>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="chart-card">
+        <div class="panel-header"><span>System Volume</span></div>
+        <div class="chart-stack">
+            {% for item in growth_rows %}
+                <div class="chart-row">
+                    <span class="chart-label">{{ item.label }}</span>
+                    <div class="chart-track">
+                        <div class="chart-fill {% if item.tone == 'blue' %}blue{% elif item.tone == 'green' %}green{% endif %}" style="width: {{ item.width }}%"></div>
+                    </div>
+                    <span class="chart-value">{{ item.value }}</span>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<section class="panel">
+    <div class="panel-header">
+        <span>Developer Notes</span>
+        <a href="{{ url_for('dashboard.admin_dashboard') }}" class="link">Back to Admin</a>
+    </div>
+    <p class="helper-text no-margin">Use rising request time, database response time, and activity-log growth as early signals for optimization or indexing work.</p>
+</section>
+<script>
+    const activeUsersValue = document.getElementById("activeUsersValue");
+
+    async function refreshActiveUsers() {
+        try {
+            const response = await fetch("{{ url_for('dashboard.admin_active_users') }}", {
+                headers: {"Accept": "application/json"}
+            });
+            if (!response.ok) return;
+            const data = await response.json();
+            activeUsersValue.textContent = data.active_users;
+        } catch (error) {
+            return;
+        }
+    }
+
+    setInterval(refreshActiveUsers, 5000);
+</script>
+{% endblock %}

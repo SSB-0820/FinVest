@@ -10,6 +10,7 @@ class User(db.Model):
     role = db.Column(db.Enum("user", "admin"), server_default="user")
     is_active = db.Column(db.Boolean, nullable=False, server_default=db.text("1"))
     password_hash = db.Column(db.String(255), nullable=False)
+    security_answers = db.Column(db.Text)
     created_at = db.Column(
         db.TIMESTAMP, server_default=db.func.current_timestamp()
     )

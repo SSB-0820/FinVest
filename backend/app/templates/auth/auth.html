@@ -84,7 +84,16 @@
                     <input type="password" name="confirm_password" placeholder="Confirm Password" minlength="8" required />
                 </div>
 
-                <p class="field-note">Username: letters, numbers, `_` and `.` only. Password: 8+ chars with uppercase, lowercase, number and symbol.</p>
+                <div class="security-questions">
+                    {% for question in security_questions %}
+                        <label>
+                            <span>{{ question }}</span>
+                            <input type="text" name="security_answer_{{ loop.index0 }}" placeholder="Answer" required />
+                        </label>
+                    {% endfor %}
+                </div>
+
+                <p class="field-note">Email must be unique. Password: 8+ chars with uppercase, lowercase, number and symbol.</p>
 
                 <button type="submit" class="btn-main">
                     <span>Sign Up</span>
@@ -124,7 +133,7 @@
                     <input type="password" name="password" placeholder="Password" required />
                 </div>
 
-                <a href="#" class="forgot">Forgot Password?</a>
+                <button type="button" class="forgot" id="forgotOpen">Forgot Password?</button>
 
                 <button type="submit" class="btn-main">
                     <span>Login</span>
@@ -158,11 +167,56 @@
         </div>
     </div>
 
+    <div class="reset-overlay {% if reset_email %}is-visible{% endif %}" id="resetOverlay">
+        <div class="reset-card">
+            <button type="button" class="reset-close" id="resetClose">×</button>
+            {% if reset_email and reset_questions %}
+                <form method="POST" action="{{ url_for('auth.forgot_password_reset') }}" class="reset-form">
+                    <div class="form-header">
+                        <h1>Reset Password</h1>
+                        <p>Answer your recovery questions to set a new password.</p>
+                    </div>
+                    <input type="hidden" name="reset_email" value="{{ reset_email }}">
+                    {% for item in reset_questions %}
+                        <label class="reset-field">
+                            <span>{{ item.question }}</span>
+                            <input type="text" name="security_answer_{{ item.index }}" placeholder="Answer" required>
+                        </label>
+                    {% endfor %}
+                    <label class="reset-field">
+                        <span>New Password</span>
+                        <input type="password" name="new_password" minlength="8" required>
+                    </label>
+                    <label class="reset-field">
+                        <span>Confirm Password</span>
+                        <input type="password" name="confirm_password" minlength="8" required>
+                    </label>
+                    <button type="submit" class="btn-main">Reset Password</button>
+                </form>
+            {% else %}
+                <form method="POST" action="{{ url_for('auth.forgot_password_questions') }}" class="reset-form">
+                    <div class="form-header">
+                        <h1>Forgot Password</h1>
+                        <p>Enter your registered email to load recovery questions.</p>
+                    </div>
+                    <label class="reset-field">
+                        <span>Email Address</span>
+                        <input type="email" name="reset_email" placeholder="Email Address" required>
+                    </label>
+                    <button type="submit" class="btn-main">Continue</button>
+                </form>
+            {% endif %}
+        </div>
+    </div>
+
     <script>
         const container = document.getElementById("container");
         const mode = "{{ mode }}";
         const flash = document.getElementById("flash-overlay");
         const btn = document.getElementById("flash-ok");
+        const forgotOpen = document.getElementById("forgotOpen");
+        const resetOverlay = document.getElementById("resetOverlay");
+        const resetClose = document.getElementById("resetClose");
 
         if (mode === "signup") {
             container.classList.add("right-panel-active");
@@ -181,6 +235,18 @@
         if (btn) {
             btn.onclick = () => {
                 flash.remove();
+            };
+        }
+
+        if (forgotOpen) {
+            forgotOpen.onclick = () => {
+                resetOverlay.classList.add("is-visible");
+            };
+        }
+
+        if (resetClose) {
+            resetClose.onclick = () => {
+                resetOverlay.classList.remove("is-visible");
             };
         }
 

@@ -1,0 +1,6 @@
+date,type,category,account,amount,description
+2026-04-01,income,Salary,Cash Wallet,85000,Monthly salary import test
+2026-04-03,expense,Food,Cash Wallet,1250,Grocery shopping import test
+2026-04-05,expense,Transport,Cash Wallet,450,Bus and cab import test
+2026-04-08,income,Freelance,Cash Wallet,18000,Website project import test
+2026-04-12,expense,Internet Bill,Cash Wallet,2200,Monthly internet bill import test

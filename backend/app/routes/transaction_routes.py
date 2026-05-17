@@ -1,3 +1,5 @@
+import csv
+import io
 from datetime import datetime
 from decimal import Decimal, InvalidOperation
 
@@ -6,6 +8,7 @@ from flask import Blueprint, flash, redirect, render_template, request, session,
 from app.models.account_model import Account, ensure_default_account
 from app.models.category_model import Category, ensure_default_categories
 from app.models.transaction_model import Transaction
+from app.services.transaction_service import apply_transaction_effect
 from app.utils.activity_logger import log_activity
 from app.utils.decorators import login_required
 from extensions.db import db
@@ -26,13 +29,48 @@ def _load_transaction_support_data(user_id):
     return accounts, categories
 
 
-def _apply_transaction_effect(account, transaction_type, amount, reverse=False):
-    signed_amount = Decimal(amount or 0)
-    if transaction_type == "expense":
-        signed_amount *= Decimal("-1")
-    if reverse:
-        signed_amount *= Decimal("-1")
-    account.balance = Decimal(account.balance or 0) + signed_amount
+def _clean_import_row(row):
+    return {
+        (key or "").strip().lower(): (value or "").strip()
+        for key, value in row.items()
+    }
+
+
+def _find_or_create_import_category(user_id, name, transaction_type):
+    category = Category.query.filter_by(
+        user_id=user_id, name=name, type=transaction_type
+    ).first()
+    if category:
+        return category
+
+    category = Category(user_id=user_id, name=name, type=transaction_type)
+    db.session.add(category)
+    db.session.flush()
+    return category
+
+
+def _find_import_account(user_id, account_name):
+    if account_name:
+        account = Account.query.filter_by(
+            user_id=user_id, account_name=account_name
+        ).first()
+        if account:
+            return account
+    account = ensure_default_account(user_id)
+    db.session.flush()
+    return account
+
+
+def _import_transaction_exists(user_id, account_id, category_id, transaction_type, amount, transaction_date, description):
+    return Transaction.query.filter_by(
+        user_id=user_id,
+        account_id=account_id,
+        category_id=category_id,
+        type=transaction_type,
+        amount=amount,
+        date=transaction_date,
+        description=description,
+    ).first() is not None
 
 
 @transactions.route("/transactions")
@@ -121,13 +159,113 @@ def add_transaction():
         description=description,
     )
     db.session.add(item)
-    _apply_transaction_effect(account, transaction_type, amount)
+    apply_transaction_effect(account, transaction_type, amount)
     log_activity(
         "transaction_added",
         f"Added {transaction_type} of {amount:.2f} in {category.name}",
     )
     db.session.commit()
     flash("Transaction added successfully")
+    return redirect(url_for("transactions.transaction_list"))
+
+
+@transactions.route("/transactions/import/csv", methods=["POST"])
+@login_required
+def import_transactions_csv():
+    user_id = session["user_id"]
+    upload = request.files.get("transaction_csv")
+    if not upload or not upload.filename:
+        flash("Choose a CSV file to import")
+        return redirect(url_for("transactions.transaction_list"))
+
+    try:
+        stream = io.StringIO(upload.stream.read().decode("utf-8-sig"), newline=None)
+        reader = csv.DictReader(stream)
+        if not reader.fieldnames:
+            flash("CSV file is empty")
+            return redirect(url_for("transactions.transaction_list"))
+
+        required_headers = {"date", "type", "category", "amount"}
+        available_headers = {(header or "").strip().lower() for header in reader.fieldnames}
+        missing_headers = required_headers - available_headers
+        if missing_headers:
+            flash(f"CSV is missing required columns: {', '.join(sorted(missing_headers))}")
+            return redirect(url_for("transactions.transaction_list"))
+
+        imported_count = 0
+        skipped_count = 0
+        error_rows = []
+
+        for row_number, raw_row in enumerate(reader, start=2):
+            row = _clean_import_row(raw_row)
+            transaction_type = row.get("type", "").lower()
+            category_name = row.get("category", "")
+            description = row.get("description", "")
+
+            if transaction_type not in {"income", "expense"} or not category_name:
+                error_rows.append(str(row_number))
+                continue
+
+            try:
+                amount = Decimal(row.get("amount", "0"))
+                transaction_date = datetime.strptime(row.get("date", ""), "%Y-%m-%d").date()
+            except (InvalidOperation, ValueError):
+                error_rows.append(str(row_number))
+                continue
+
+            if amount <= 0:
+                error_rows.append(str(row_number))
+                continue
+
+            category = _find_or_create_import_category(user_id, category_name, transaction_type)
+            account = _find_import_account(user_id, row.get("account", ""))
+
+            if _import_transaction_exists(
+                user_id,
+                account.id,
+                category.id,
+                transaction_type,
+                amount,
+                transaction_date,
+                description,
+            ):
+                skipped_count += 1
+                continue
+
+            item = Transaction(
+                user_id=user_id,
+                account_id=account.id,
+                category_id=category.id,
+                type=transaction_type,
+                amount=amount,
+                date=transaction_date,
+                description=description,
+            )
+            db.session.add(item)
+            apply_transaction_effect(account, transaction_type, amount)
+            imported_count += 1
+
+        log_activity(
+            "transactions_imported",
+            f"Imported {imported_count} transaction(s), skipped {skipped_count} duplicate(s)",
+        )
+        db.session.commit()
+
+        message = f"Imported {imported_count} transaction(s)"
+        if skipped_count:
+            message += f", skipped {skipped_count} duplicate(s)"
+        if error_rows:
+            message += f". Rows with errors: {', '.join(error_rows[:8])}"
+            if len(error_rows) > 8:
+                message += "..."
+        flash(message)
+    except UnicodeDecodeError:
+        db.session.rollback()
+        flash("CSV must be saved as UTF-8 text")
+    except Exception:
+        db.session.rollback()
+        flash("Could not import CSV. Please check the file format and try again")
+
     return redirect(url_for("transactions.transaction_list"))
 
 
@@ -156,7 +294,7 @@ def edit_transaction(transaction_id):
 
     old_account = Account.query.filter_by(id=item.account_id, user_id=user_id).first()
     if old_account:
-        _apply_transaction_effect(old_account, item.type, item.amount, reverse=True)
+        apply_transaction_effect(old_account, item.type, item.amount, reverse=True)
 
     item.account_id = account_id
     item.category_id = category_id
@@ -164,7 +302,7 @@ def edit_transaction(transaction_id):
     item.amount = new_amount
     item.date = datetime.strptime(request.form.get("date"), "%Y-%m-%d").date()
     item.description = request.form.get("description", "").strip()
-    _apply_transaction_effect(account, item.type, item.amount)
+    apply_transaction_effect(account, item.type, item.amount)
     log_activity(
         "transaction_updated",
         f"Updated transaction #{item.id} to {item.type} {item.amount:.2f} in {category.name}",
@@ -180,7 +318,7 @@ def delete_transaction(transaction_id):
     item = Transaction.query.filter_by(id=transaction_id, user_id=session["user_id"]).first_or_404()
     account = Account.query.filter_by(id=item.account_id, user_id=session["user_id"]).first()
     if account:
-        _apply_transaction_effect(account, item.type, item.amount, reverse=True)
+        apply_transaction_effect(account, item.type, item.amount, reverse=True)
     log_activity(
         "transaction_deleted",
         f"Deleted {item.type} transaction of {Decimal(item.amount or 0):.2f}",

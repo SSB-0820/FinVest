@@ -9,11 +9,12 @@ from app.models.account_model import Account
 from app.models.activity_log_model import ActivityLog
 from app.models.category_model import Category
 from app.models.goal_model import Goal
+from app.models.recurring_transaction_model import RecurringTransaction
 from app.models.transaction_model import Transaction
 from app.models.user_model import User
 from app.models.user_settings_model import UserSettings, get_or_create_user_settings
-from app.services.report_service import build_report_summary
 from app.services.notification_service import sync_notifications
+from app.services.report_service import build_report_summary
 from app.utils.activity_logger import log_activity
 from app.utils.decorators import login_required
 from extensions.db import db
@@ -44,6 +45,7 @@ def report_list():
         end_date=end_date,
         category_id=category_filter,
         transaction_type=transaction_type,
+        save_snapshot=True,
     )
     categories = Category.query.filter_by(user_id=user_id).order_by(Category.name.asc()).all()
     report_snapshots = []
@@ -76,6 +78,38 @@ def export_transactions_csv():
     summary = build_report_summary(user_id)
     output = io.StringIO()
     writer = csv.writer(output)
+    writer.writerow(["FinVest Analytics Summary"])
+    writer.writerow(["Metric", "Value"])
+    writer.writerow(["Total Income", f"{summary['total_income']:.2f}"])
+    writer.writerow(["Total Expense", f"{summary['total_expense']:.2f}"])
+    writer.writerow(["Net", f"{summary['net']:.2f}"])
+    writer.writerow(["Average Monthly Spending", f"{summary['average_monthly_spending']:.2f}"])
+    writer.writerow(["Savings Rate", f"{summary['savings_rate']:.2f}%"])
+    writer.writerow(["Transaction Count", summary["transaction_count"]])
+    if summary["top_category"]:
+        writer.writerow(["Highest Expense Category", summary["top_category"][0]])
+    writer.writerow([])
+    writer.writerow(["Spending and Income Trends"])
+    writer.writerow(["Trend", "Value", "Detail"])
+    for item in summary["trend_rows"]:
+        writer.writerow([item["label"], item["value"], item["detail"]])
+    writer.writerow([])
+    writer.writerow(["Income Source Chart Data"])
+    writer.writerow(["Source", "Amount", "Percent"])
+    for item in summary["income_source_rows"]:
+        writer.writerow([item["name"], f"{item['amount']:.2f}", item["percent"]])
+    writer.writerow([])
+    writer.writerow(["Monthly Chart Data"])
+    writer.writerow(["Month", "Income", "Expense", "Net"])
+    for item in summary["monthly_rows"]:
+        writer.writerow([item["label"], f"{item['income']:.2f}", f"{item['expense']:.2f}", f"{item['net']:.2f}"])
+    writer.writerow([])
+    writer.writerow(["Category Chart Data"])
+    writer.writerow(["Category", "Amount", "Percent"])
+    for item in summary["category_chart_rows"]:
+        writer.writerow([item["name"], f"{item['amount']:.2f}", item["percent"]])
+    writer.writerow([])
+    writer.writerow(["Transactions"])
     writer.writerow(["Date", "Type", "Category", "Account", "Amount", "Description"])
     for item in summary["transactions"]:
         writer.writerow(
@@ -106,6 +140,8 @@ def backup_user_data():
     accounts = Account.query.filter_by(user_id=user_id).all()
     categories = Category.query.filter_by(user_id=user_id).all()
     goals = Goal.query.filter_by(user_id=user_id).all()
+    recurring = RecurringTransaction.query.filter_by(user_id=user_id).all()
+    summary = build_report_summary(user_id)
     notifications = get_collection("activity_logs")
 
     payload = {
@@ -149,6 +185,55 @@ def backup_user_data():
             }
             for item in Transaction.query.filter_by(user_id=user_id).order_by(Transaction.date.desc()).all()
         ],
+        "recurring_transactions": [
+            {
+                "account": item.account.account_name if item.account else "",
+                "category": item.category.name if item.category else "",
+                "type": item.type,
+                "amount": float(item.amount or 0),
+                "frequency": item.frequency,
+                "description": item.description or "",
+                "start_date": item.start_date.isoformat() if item.start_date else None,
+                "next_run_date": item.next_run_date.isoformat() if item.next_run_date else None,
+                "is_active": bool(item.is_active),
+            }
+            for item in recurring
+        ],
+        "analytics": {
+            "total_income": float(summary["total_income"]),
+            "total_expense": float(summary["total_expense"]),
+            "net": float(summary["net"]),
+            "average_monthly_spending": float(summary["average_monthly_spending"]),
+            "savings_rate": float(summary["savings_rate"]),
+            "transaction_count": summary["transaction_count"],
+            "top_category": summary["top_category"][0] if summary["top_category"] else None,
+            "monthly_chart": [
+                {
+                    "label": item["label"],
+                    "income": float(item["income"]),
+                    "expense": float(item["expense"]),
+                    "net": float(item["net"]),
+                }
+                for item in summary["monthly_rows"]
+            ],
+            "category_chart": [
+                {
+                    "name": item["name"],
+                    "amount": float(item["amount"]),
+                    "percent": item["percent"],
+                }
+                for item in summary["category_chart_rows"]
+            ],
+            "income_source_chart": [
+                {
+                    "name": item["name"],
+                    "amount": float(item["amount"]),
+                    "percent": item["percent"],
+                }
+                for item in summary["income_source_rows"]
+            ],
+            "trends": summary["trend_rows"],
+        },
         "mongo_logs_available": notifications is not None,
     }
 

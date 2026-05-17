@@ -67,5 +67,89 @@
             {% block content %}{% endblock %}
         </main>
     </div>
+    <script>
+        window.FINVEST_DISPLAY = {
+            currency: "{{ display_currency }}",
+            symbol: "{{ display_currency_symbol }}",
+            rate: {{ display_currency_rates.get(display_currency, 1)|tojson }},
+            language: "{{ display_language }}"
+        };
+
+        const translations = {
+            hi: {
+                "Dashboard": "डैशबोर्ड", "Transactions": "लेन-देन", "Categories": "श्रेणियां", "Budgets": "बजट", "Goals": "लक्ष्य", "Reports": "रिपोर्ट", "Admin": "एडमिन",
+                "Account Settings": "खाता सेटिंग", "Logout": "लॉगआउट", "Total Balance": "कुल शेष", "Monthly Income": "मासिक आय", "Monthly Expense": "मासिक खर्च",
+                "Average Monthly Spending": "औसत मासिक खर्च", "Recent Transactions": "हाल के लेन-देन", "Accounts": "खाते", "Top Saving Goal": "मुख्य बचत लक्ष्य",
+                "Filter Transactions": "लेन-देन फिल्टर", "Transaction History": "लेन-देन इतिहास", "Add Transaction": "लेन-देन जोड़ें", "Type": "प्रकार", "Category": "श्रेणी",
+                "Account": "खाता", "Amount": "राशि", "Date": "तारीख", "Description": "विवरण", "Actions": "कार्रवाई", "Income": "आय", "Expense": "खर्च",
+                "Add Budget": "बजट जोड़ें", "Current Budgets": "वर्तमान बजट", "Saved Recurring Expenses": "सहेजे गए आवर्ती खर्च", "Save Recurring Expense": "आवर्ती खर्च सहेजें",
+                "Your Goals": "आपके लक्ष्य", "Add Goal": "लक्ष्य जोड़ें", "Reports and Analytics": "रिपोर्ट और विश्लेषण", "Category Analysis": "श्रेणी विश्लेषण",
+                "Monthly Summary": "मासिक सारांश", "Financial Trends": "वित्तीय रुझान", "Income Source Mix": "आय स्रोत मिश्रण", "Export and Backup": "निर्यात और बैकअप",
+                "Profile": "प्रोफाइल", "Settings": "सेटिंग", "Language": "भाषा", "Reset Password": "पासवर्ड रीसेट", "Update Password": "पासवर्ड अपडेट करें",
+                "System Performance": "सिस्टम प्रदर्शन", "All Users": "सभी उपयोगकर्ता", "User Activity": "उपयोगकर्ता गतिविधि"
+            },
+            mr: {
+                "Dashboard": "डॅशबोर्ड", "Transactions": "व्यवहार", "Categories": "वर्ग", "Budgets": "बजेट", "Goals": "ध्येये", "Reports": "अहवाल", "Admin": "प्रशासक",
+                "Account Settings": "खाते सेटिंग", "Logout": "लॉगआउट", "Total Balance": "एकूण शिल्लक", "Monthly Income": "मासिक उत्पन्न", "Monthly Expense": "मासिक खर्च",
+                "Average Monthly Spending": "सरासरी मासिक खर्च", "Recent Transactions": "अलीकडील व्यवहार", "Accounts": "खाती", "Top Saving Goal": "मुख्य बचत ध्येय",
+                "Filter Transactions": "व्यवहार फिल्टर", "Transaction History": "व्यवहार इतिहास", "Add Transaction": "व्यवहार जोडा", "Type": "प्रकार", "Category": "वर्ग",
+                "Account": "खाते", "Amount": "रक्कम", "Date": "तारीख", "Description": "वर्णन", "Actions": "कृती", "Income": "उत्पन्न", "Expense": "खर्च",
+                "Add Budget": "बजेट जोडा", "Current Budgets": "सध्याचे बजेट", "Saved Recurring Expenses": "जतन केलेले आवर्ती खर्च", "Save Recurring Expense": "आवर्ती खर्च जतन करा",
+                "Your Goals": "तुमची ध्येये", "Add Goal": "ध्येय जोडा", "Reports and Analytics": "अहवाल आणि विश्लेषण", "Category Analysis": "वर्ग विश्लेषण",
+                "Monthly Summary": "मासिक सारांश", "Financial Trends": "आर्थिक कल", "Income Source Mix": "उत्पन्न स्रोत मिश्रण", "Export and Backup": "निर्यात आणि बॅकअप",
+                "Profile": "प्रोफाइल", "Settings": "सेटिंग", "Language": "भाषा", "Reset Password": "पासवर्ड रीसेट", "Update Password": "पासवर्ड अपडेट करा",
+                "System Performance": "सिस्टम कामगिरी", "All Users": "सर्व वापरकर्ते", "User Activity": "वापरकर्ता क्रियाकलाप"
+            }
+        };
+
+        function convertCurrencyText(text) {
+            const display = window.FINVEST_DISPLAY;
+            if (display.currency === "INR") return text;
+            return text.replace(/(?:Rs\.|INR|USD|EUR|GBP|\$)\s*(-?\d+(?:,\d{3})*(?:\.\d+)?)/g, (_, amount) => {
+                const converted = Number(amount.replace(/,/g, "")) * display.rate;
+                return `${display.symbol} ${converted.toFixed(2)}`;
+            });
+        }
+
+        function translateText(text) {
+            const dictionary = translations[window.FINVEST_DISPLAY.language] || {};
+            const trimmed = text.trim();
+            return dictionary[trimmed] ? text.replace(trimmed, dictionary[trimmed]) : text;
+        }
+
+        function walkText(node) {
+            if (node.nodeType === Node.TEXT_NODE) {
+                node.nodeValue = translateText(convertCurrencyText(node.nodeValue));
+                return;
+            }
+            if (node.nodeType !== Node.ELEMENT_NODE || ["SCRIPT", "STYLE"].includes(node.tagName)) return;
+            ["placeholder", "title", "value"].forEach((attr) => {
+                if (node.hasAttribute && node.hasAttribute(attr)) {
+                    node.setAttribute(attr, translateText(convertCurrencyText(node.getAttribute(attr))));
+                }
+            });
+            node.childNodes.forEach(walkText);
+        }
+
+        function paintReportPies() {
+            const colors = ["#C9A84C", "#4f8ef7", "#5ECB8C", "#e07070", "#8A8F9E", "#8090f0"];
+            document.querySelectorAll(".report-pie").forEach((pie) => {
+                const rows = JSON.parse(pie.dataset.pie || "[]").slice(0, 6);
+                let start = 0;
+                const segments = rows.map((row, index) => {
+                    const end = start + (Number(row.percent || 0) * 3.6);
+                    const segment = `${colors[index % colors.length]} ${start.toFixed(2)}deg ${end.toFixed(2)}deg`;
+                    start = end;
+                    return segment;
+                });
+                pie.style.background = segments.length
+                    ? `conic-gradient(from -90deg, ${segments.join(", ")}, #1A2035 ${start.toFixed(2)}deg 360deg)`
+                    : "conic-gradient(from -90deg, #1A2035 0deg 360deg)";
+            });
+        }
+
+        walkText(document.body);
+        paintReportPies();
+    </script>
 </body>
 </html>

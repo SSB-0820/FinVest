@@ -47,6 +47,42 @@
                 <p class="empty-text">No budgets added for this month yet.</p>
             {% endif %}
         </div>
+
+        <div class="panel">
+            <div class="panel-header"><span>Saved Recurring Expenses</span></div>
+            {% if recurring_expenses %}
+                <div class="budget-list">
+                    {% for item in recurring_expenses %}
+                        <div class="budget-card-row">
+                            <div class="budget-card-header">
+                                <div>
+                                    <strong>{{ item.description or item.category.name }}</strong>
+                                    <div class="helper-text">{{ item.frequency|capitalize }} | Next: {{ item.next_run_date.strftime('%d %b %Y') }}</div>
+                                </div>
+                                <span class="type-chip {% if item.is_active %}income{% else %}expense{% endif %}">
+                                    {{ 'Active' if item.is_active else 'Paused' }}
+                                </span>
+                            </div>
+                            <div class="budget-amounts">
+                                <span>{{ settings.currency }} {{ '%.2f'|format(item.amount) }}</span>
+                                <span>{{ item.category.name }}</span>
+                                <span>{{ item.account.account_name }}</span>
+                            </div>
+                            <div class="row-actions">
+                                <form method="POST" action="{{ url_for('budgets.toggle_recurring_expense', recurring_id=item.id) }}">
+                                    <button type="submit" class="btn-secondary-action small">{{ 'Pause' if item.is_active else 'Resume' }}</button>
+                                </form>
+                                <form method="POST" action="{{ url_for('budgets.delete_recurring_expense', recurring_id=item.id) }}">
+                                    <button type="submit" class="btn-link-danger">Delete</button>
+                                </form>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p class="empty-text">No recurring expenses saved yet.</p>
+            {% endif %}
+        </div>
     </div>
 
     <div class="content-side">
@@ -74,6 +110,49 @@
                     <input type="number" name="year" min="2024" max="2100" value="{{ year }}" required>
                 </label>
                 <button type="submit" class="btn-primary-action">Save Budget</button>
+            </form>
+        </div>
+
+        <div class="panel form-card">
+            <div class="panel-header"><span>Save Recurring Expense</span></div>
+            <form method="POST" action="{{ url_for('budgets.add_recurring_expense') }}" class="stack-form">
+                <label>
+                    <span>Account</span>
+                    <select name="account_id" required>
+                        {% for account in accounts %}
+                            <option value="{{ account.id }}">{{ account.account_name }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+                <label>
+                    <span>Category</span>
+                    <select name="category_id" required>
+                        {% for category in categories %}
+                            <option value="{{ category.id }}">{{ category.name }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+                <label>
+                    <span>Amount</span>
+                    <input type="number" name="amount" min="0.01" step="0.01" required>
+                </label>
+                <label>
+                    <span>Frequency</span>
+                    <select name="frequency">
+                        <option value="monthly">Monthly</option>
+                        <option value="daily">Daily</option>
+                        <option value="yearly">Yearly</option>
+                    </select>
+                </label>
+                <label>
+                    <span>Start Date</span>
+                    <input type="date" name="start_date" required>
+                </label>
+                <label>
+                    <span>Description</span>
+                    <input type="text" name="description" placeholder="Internet bill">
+                </label>
+                <button type="submit" class="btn-primary-action">Save Recurring Expense</button>
             </form>
         </div>
     </div>

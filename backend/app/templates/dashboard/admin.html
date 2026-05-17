@@ -40,7 +40,10 @@
     </div>
 
     <div class="chart-card">
-        <div class="panel-header"><span>Today at a Glance</span></div>
+        <div class="panel-header">
+            <span>Today at a Glance</span>
+            <a href="{{ url_for('dashboard.admin_performance') }}" class="link">Performance</a>
+        </div>
         <div class="mini-stats-grid">
             <div class="mini-stat">
                 <span class="helper-text">Logins Today</span>
@@ -62,7 +65,7 @@
     </div>
 </section>
 
-<section class="chart-card">
+<section class="chart-card admin-spaced-section">
     <div class="panel-header"><span>Last 7 Days Activity</span></div>
     <div class="chart-stack">
         {% for item in daily_activity_rows %}
@@ -140,7 +143,7 @@
 
         <div class="panel">
             <div class="panel-header">
-                <span>System Transactions</span>
+                <span>Monthly Category Transactions</span>
                 <form method="GET" action="{{ url_for('dashboard.admin_dashboard') }}" class="inline-filter">
                     <select name="user_id">
                         <option value="">All Users</option>
@@ -151,31 +154,29 @@
                     <button type="submit" class="btn-primary-action small">Filter</button>
                 </form>
             </div>
-            <div class="table-wrap">
+            <div class="table-wrap scroll-panel">
                 <table class="data-table">
                     <thead>
                         <tr>
-                            <th>User</th>
-                            <th>Date</th>
-                            <th>Type</th>
                             <th>Category</th>
-                            <th>Amount</th>
-                            <th>Description</th>
+                            <th>Month</th>
+                            <th>Income</th>
+                            <th>Expense</th>
+                            <th>Entries</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {% for item in system_transactions %}
+                        {% for item in monthly_category_rows %}
                             <tr>
-                                <td>{{ user_lookup[item.user_id].name if user_lookup.get(item.user_id) else item.user_id }}</td>
-                                <td>{{ item.date.strftime('%d-%m-%Y') if item.date else '-' }}</td>
-                                <td><span class="type-chip {{ item.type }}">{{ item.type }}</span></td>
-                                <td>{{ item.category.name if item.category else '-' }}</td>
-                                <td>{{ '%.2f'|format(item.amount) }}</td>
-                                <td>{{ item.description or '-' }}</td>
+                                <td>{{ item.category }}</td>
+                                <td>{{ item.month }}</td>
+                                <td>{{ item.income|money }}</td>
+                                <td>{{ item.expense|money }}</td>
+                                <td>{{ item.count }}</td>
                             </tr>
                         {% else %}
                             <tr>
-                                <td colspan="6">No transactions found for the selected filter.</td>
+                                <td colspan="5">No transaction summary found for the selected filter.</td>
                             </tr>
                         {% endfor %}
                     </tbody>
@@ -188,7 +189,7 @@
         <div class="panel">
             <div class="panel-header"><span>User Activity</span></div>
             {% if activity_logs %}
-                <div class="activity-list">
+                <div class="activity-list scroll-panel">
                     {% for item in activity_logs %}
                         <div class="activity-row">
                             <div class="activity-header">
