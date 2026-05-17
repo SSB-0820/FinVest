@@ -11,5 +11,7 @@ class Goal(db.Model):
     goal_name = db.Column(db.String(150), nullable=False)
     target_amount = db.Column(db.Numeric(12, 2), nullable=False)
     current_amount = db.Column(db.Numeric(12, 2), default=0)
+    monthly_contribution_amount = db.Column(db.Numeric(12, 2), default=0)
+    last_contribution_date = db.Column(db.Date)
     deadline = db.Column(db.Date)
     status = db.Column(db.String(50), default="In Progress")

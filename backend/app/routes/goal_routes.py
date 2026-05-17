@@ -53,6 +53,7 @@ def add_goal():
     goal_name = request.form.get("goal_name", "").strip()
     target_amount = Decimal(request.form.get("target_amount", "0") or "0")
     current_amount = Decimal(request.form.get("current_amount", "0") or "0")
+    monthly_contribution_amount = Decimal(request.form.get("monthly_contribution_amount", "0") or "0")
     deadline_raw = request.form.get("deadline", "").strip()
     status = request.form.get("status", "In Progress").strip() or "In Progress"
 
@@ -64,6 +65,9 @@ def add_goal():
         return redirect(url_for("goals.goal_list"))
     if current_amount < 0:
         flash("Current amount cannot be negative")
+        return redirect(url_for("goals.goal_list"))
+    if monthly_contribution_amount < 0:
+        flash("Monthly contribution cannot be negative")
         return redirect(url_for("goals.goal_list"))
 
     existing = Goal.query.filter(
@@ -85,6 +89,7 @@ def add_goal():
             goal_name=goal_name,
             target_amount=target_amount,
             current_amount=current_amount,
+            monthly_contribution_amount=monthly_contribution_amount,
             deadline=deadline,
             status=status,
         )
@@ -116,10 +121,17 @@ def update_goal(goal_id):
     if Decimal(request.form.get("current_amount", item.current_amount) or item.current_amount) < 0:
         flash("Current amount cannot be negative")
         return redirect(url_for("goals.goal_list"))
+    monthly_contribution_amount = Decimal(
+        request.form.get("monthly_contribution_amount", item.monthly_contribution_amount) or 0
+    )
+    if monthly_contribution_amount < 0:
+        flash("Monthly contribution cannot be negative")
+        return redirect(url_for("goals.goal_list"))
 
     item.goal_name = goal_name
     item.target_amount = target_amount
     item.current_amount = Decimal(request.form.get("current_amount", item.current_amount) or item.current_amount)
+    item.monthly_contribution_amount = monthly_contribution_amount
     item.status = request.form.get("status", item.status).strip() or item.status
 
     deadline_raw = request.form.get("deadline", "").strip()

@@ -99,6 +99,8 @@ CREATE TABLE IF NOT EXISTS goals (
     goal_name VARCHAR(150) NOT NULL,
     target_amount DECIMAL(12, 2) NOT NULL,
     current_amount DECIMAL(12, 2) DEFAULT 0,
+    monthly_contribution_amount DECIMAL(12, 2) DEFAULT 0,
+    last_contribution_date DATE NULL,
     deadline DATE,
     status VARCHAR(50),
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE

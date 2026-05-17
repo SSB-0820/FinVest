@@ -4,6 +4,7 @@ from decimal import Decimal
 
 from app.models.account_model import Account, ensure_default_account
 from app.models.category_model import Category, ensure_default_categories
+from app.models.goal_model import Goal
 from app.models.recurring_transaction_model import RecurringTransaction
 from app.models.transaction_model import Transaction
 from app.models.user_model import User
@@ -110,9 +111,54 @@ def process_recurring_transactions(user_id, today=None):
     return created
 
 
+def _goal_contribution_due(goal, today):
+    amount = Decimal(goal.monthly_contribution_amount or 0)
+    if amount <= 0 or goal.status != "In Progress":
+        return False
+    if Decimal(goal.current_amount or 0) >= Decimal(goal.target_amount or 0):
+        return False
+    if not goal.last_contribution_date:
+        return True
+    return (
+        goal.last_contribution_date.year,
+        goal.last_contribution_date.month,
+    ) != (today.year, today.month)
+
+
+def process_goal_contributions(user_id, today=None):
+    today = today or date.today()
+    created = 0
+    account = ensure_default_account(user_id)
+    goals = Goal.query.filter_by(user_id=user_id).all()
+    db.session.flush()
+
+    for goal in goals:
+        if not _goal_contribution_due(goal, today):
+            continue
+
+        target = Decimal(goal.target_amount or 0)
+        current = Decimal(goal.current_amount or 0)
+        remaining = max(Decimal("0"), target - current)
+        contribution = min(Decimal(goal.monthly_contribution_amount or 0), remaining)
+        if contribution <= 0:
+            continue
+        if Decimal(account.balance or 0) < contribution:
+            continue
+
+        goal.current_amount = current + contribution
+        goal.last_contribution_date = today
+        apply_transaction_effect(account, "expense", contribution)
+        if Decimal(goal.current_amount or 0) >= target:
+            goal.status = "Completed"
+        created += 1
+
+    return created
+
+
 def run_user_automations(user_id, today=None, commit=True):
     created = process_monthly_salary(user_id, today=today)
     created += process_recurring_transactions(user_id, today=today)
+    created += process_goal_contributions(user_id, today=today)
     if commit:
         db.session.commit()
     return created

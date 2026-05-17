@@ -29,6 +29,16 @@ def ensure_automation_schema():
             db.session.execute(
                 text("ALTER TABLE user_settings ADD COLUMN language VARCHAR(10) DEFAULT 'en'")
             )
+    if "goals" in tables:
+        columns = {column["name"] for column in inspector.get_columns("goals")}
+        if "monthly_contribution_amount" not in columns:
+            db.session.execute(
+                text("ALTER TABLE goals ADD COLUMN monthly_contribution_amount DECIMAL(12, 2) DEFAULT 0")
+            )
+        if "last_contribution_date" not in columns:
+            db.session.execute(
+                text("ALTER TABLE goals ADD COLUMN last_contribution_date DATE NULL")
+            )
 
     if "recurring_transactions" not in tables or "active_sessions" not in tables:
         db.create_all()

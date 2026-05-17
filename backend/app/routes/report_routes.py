@@ -169,6 +169,8 @@ def backup_user_data():
                 "goal_name": item.goal_name,
                 "target_amount": float(item.target_amount or 0),
                 "current_amount": float(item.current_amount or 0),
+                "monthly_contribution_amount": float(item.monthly_contribution_amount or 0),
+                "last_contribution_date": item.last_contribution_date.isoformat() if item.last_contribution_date else None,
                 "deadline": item.deadline.isoformat() if item.deadline else None,
                 "status": item.status,
             }

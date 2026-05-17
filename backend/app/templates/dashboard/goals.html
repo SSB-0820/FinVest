@@ -27,6 +27,7 @@
                                 <span>Saved: {{ settings.currency }} {{ '%.2f'|format(item.goal.current_amount) }}</span>
                                 <span>Target: {{ settings.currency }} {{ '%.2f'|format(item.goal.target_amount) }}</span>
                                 <span>Left: {{ settings.currency }} {{ '%.2f'|format(item.remaining) }}</span>
+                                <span>Monthly: {{ settings.currency }} {{ '%.2f'|format(item.goal.monthly_contribution_amount or 0) }}</span>
                             </div>
 
                             <div class="bar tall">
@@ -45,6 +46,7 @@
                                     <input type="text" name="goal_name" value="{{ item.goal.goal_name }}" required>
                                     <input type="number" name="target_amount" min="0" step="0.01" value="{{ item.goal.target_amount }}" required>
                                     <input type="number" name="current_amount" min="0" step="0.01" value="{{ item.goal.current_amount }}" required>
+                                    <input type="number" name="monthly_contribution_amount" min="0" step="0.01" value="{{ item.goal.monthly_contribution_amount or 0 }}" placeholder="Monthly contribution">
                                     <input type="date" name="deadline" value="{{ item.goal.deadline.isoformat() if item.goal.deadline else '' }}">
                                     <select name="status">
                                         {% for status in ['In Progress', 'Completed', 'Paused'] %}
@@ -82,6 +84,10 @@
                 <label>
                     <span>Current Amount</span>
                     <input type="number" name="current_amount" min="0" step="0.01" value="0">
+                </label>
+                <label>
+                    <span>Monthly Contribution</span>
+                    <input type="number" name="monthly_contribution_amount" min="0" step="0.01" value="0">
                 </label>
                 <p class="helper-text no-margin">Same goal name with the same target amount will not be added twice.</p>
                 <label>
